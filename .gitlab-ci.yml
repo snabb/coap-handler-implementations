@@ -1,0 +1,9 @@
+test:stable:
+  image: docker.io/rust
+  script:
+  - cargo version && cargo build --all && cargo test && cargo test --features error_unprocessed_coap_option,error_request_body_error_position
+
+tests:nightly:
+  image: docker.io/rustlang/rust:nightly
+  script:
+  - cargo +nightly version && cargo +nightly build --all --all-features

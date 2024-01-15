@@ -1,0 +1,82 @@
+[package]
+name = "coap-handler-implementations"
+version = "0.5.0-alpha.2"
+authors = ["chrysn <chrysn@fsfe.org>"]
+edition = "2021"
+
+description = "Simple implementations of CoAP handlers"
+documentation = "https://docs.rs/coap-handler-implementations/"
+repository = "https://gitlab.com/chrysn/coap-handler-implementations"
+keywords = ["coap", "iot"]
+categories = [ "no-std::no-alloc" ]
+license = "MIT OR Apache-2.0"
+
+rust-version = "1.65"
+
+[dependencies]
+coap-message = "0.3.0-alpha.1"
+coap-handler = "0.2.0-alpha.1"
+
+serde_cbor = { version = "0.11", default-features = false }
+serde = { version = "^1.0.69", default-features = false, features = ["derive"] }
+windowed-infinity = { version = "^0.1.4", features = [ "with_serde_cbor", "with_minicbor_0_19", "with_ciborium", "with_embedded_io_0_4" ] }
+crc = { version = "^3", default-features = false }
+coap-numbers = { version = "^0.2.2", default-features = false }
+
+# For the typed_resource versions
+minicbor = { version = "0.19", default-features = false }
+ciborium-io = { version = "0.2", default-features = false }
+
+embedded-io = "0.4"
+
+document-features = "0.2"
+
+[dev-dependencies]
+coap-message-utils = "0.3.0-alpha.1"
+cbor-diag = "0.1.12"
+
+[features]
+#! ## Feature flags
+
+## Enables use of type_alias_impl_trait; currently not changing features, but
+## generalizing the signatures.
+nontrivial_option_processing = []
+
+## Make a few items pub available that do not have stability guarantees.
+## While this is useful in the context of building handlers into statics,
+## apply the same caution as with any other crate feature that's
+## disabling stability guarantees: Don't use this from libraries, for
+## your dependents will run the risk of accidentally using unstable names.
+leaky_names = []
+
+## This crate has nothing in terms of std to activate, but due to serde's
+## non-additive std feature that extends down to serde_cbor, a user may need to
+## declare that serde's std feature is used just so that all serde implementers
+## are instructed to properly switch on their std as well.
+serde-std = [ "serde_cbor/std", "serde/std" ]
+
+#! ### Details of the Error struct
+#!
+#! Without these, the [Error] struct is just a code u8.
+
+## Allow storing the RFC9290 "Unprocessed CoAP option" problem detail in Bad
+## Option errors, and emit it in CBOR payloads. If this feature is not
+## enabled, any such detail provided in errors is silently not emitted.
+error_unprocessed_coap_option = []
+
+## Allow storing the RFC9290 "Request Body Error Position" problem detail in
+## Bad Request errors, and emit it in CBOR payloads. If this feature is not
+## enabled, any such detail provided in errors is silently not emitted.
+error_request_body_error_position = []
+
+## Store a Max-Age of the error. The method [Error::with_max_age()] is only
+## available when this feature is enabled.
+error_max_age = []
+
+_nightly_docs = []
+
+[badges]
+gitlab = { repository = "chrysn/coap-handler-implementations" }
+
+[package.metadata.docs.rs]
+all-features = true
