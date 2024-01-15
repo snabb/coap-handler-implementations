@@ -31,8 +31,9 @@ embedded-io = "0.4"
 
 document-features = "0.2"
 
+coap-message-utils = { version = "0.3.0", path = "../coap-message-utils" }
+
 [dev-dependencies]
-coap-message-utils = "0.3.0-alpha.1"
 cbor-diag = "0.1.12"
 
 [features]
@@ -54,24 +55,6 @@ leaky_names = []
 ## declare that serde's std feature is used just so that all serde implementers
 ## are instructed to properly switch on their std as well.
 serde-std = [ "serde_cbor/std", "serde/std" ]
-
-#! ### Details of the Error struct
-#!
-#! Without these, the [Error] struct is just a code u8.
-
-## Allow storing the RFC9290 "Unprocessed CoAP option" problem detail in Bad
-## Option errors, and emit it in CBOR payloads. If this feature is not
-## enabled, any such detail provided in errors is silently not emitted.
-error_unprocessed_coap_option = []
-
-## Allow storing the RFC9290 "Request Body Error Position" problem detail in
-## Bad Request errors, and emit it in CBOR payloads. If this feature is not
-## enabled, any such detail provided in errors is silently not emitted.
-error_request_body_error_position = []
-
-## Store a Max-Age of the error. The method [Error::with_max_age()] is only
-## available when this feature is enabled.
-error_max_age = []
 
 _nightly_docs = []
 

@@ -1,3 +1,8 @@
+# Changes in *next*
+
+* Move `Error` over to the `coap-message-utils` crate.
+  That is a new public dependency.
+
 # Changes in 0.5.0-alpha.2
 
 *This release contains no breaking changes relative to alpha.1.*

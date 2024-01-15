@@ -53,8 +53,7 @@ mod wkc_implementation;
 #[cfg(feature = "leaky_names")]
 pub use wkc_implementation::WellKnownCore;
 
-mod error;
-pub use error::Error;
+use coap_message_utils::Error;
 
 mod forking;
 mod forking_helpers;
