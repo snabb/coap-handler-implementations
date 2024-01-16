@@ -33,9 +33,6 @@ document-features = "0.2"
 
 coap-message-utils = { version = "0.3.0", path = "../coap-message-utils" }
 
-[dev-dependencies]
-cbor-diag = "0.1.12"
-
 [features]
 #! ## Feature flags
 
