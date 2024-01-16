@@ -9,6 +9,7 @@ use coap_message::{
     error::RenderableOnMinimal, Code as _, MessageOption, MinimalWritableMessage,
     MutableWritableMessage, ReadableMessage,
 };
+use coap_message_utils::{option_value::Block2RequestData, OptionsExt};
 use core::fmt::Debug;
 
 const LINK_FORMAT: u16 = 40;
@@ -31,7 +32,7 @@ pub enum WkcData<T> {
         // easiest error indication...
         code: u8,
         // to be extended later to queries, content format and more
-        block2: crate::helpers::Block2RequestData,
+        block2: Block2RequestData,
     },
     Other(T),
 }
@@ -74,8 +75,6 @@ impl<H: Reporting + Handler> Handler for WellKnownCore<H> {
         &mut self,
         req: &M,
     ) -> Result<Self::RequestData, Self::ExtractRequestError> {
-        use crate::option_processing::OptionsExt;
-
         let mut block2 = None;
 
         let mut pathmatch = 0;

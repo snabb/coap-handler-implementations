@@ -39,10 +39,6 @@ cbor-diag = "0.1.12"
 [features]
 #! ## Feature flags
 
-## Enables use of type_alias_impl_trait; currently not changing features, but
-## generalizing the signatures.
-nontrivial_option_processing = []
-
 ## Make a few items pub available that do not have stability guarantees.
 ## While this is useful in the context of building handlers into statics,
 ## apply the same caution as with any other crate feature that's

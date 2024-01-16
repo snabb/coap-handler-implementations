@@ -2,13 +2,13 @@
 //! trait, along with the [TypeSerializer] helper trait and its corresponding implementations
 //! for various serde(ish) (de)serializers.
 
-use crate::helpers::{block2_write_with_cf, Block2RequestData};
-use crate::option_processing::OptionsExt;
+use crate::helpers::block2_write_with_cf;
 use crate::Error;
 use coap_handler::Handler;
 use coap_message::{
     Code as _, MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
 };
+use coap_message_utils::{option_value::Block2RequestData, OptionsExt};
 use coap_numbers::{code, option};
 use core::marker::PhantomData;
 

@@ -1,7 +1,13 @@
 # Changes in *next*
 
-* Move `Error` over to the `coap-message-utils` crate.
+* Move parts over to the `coap-message-utils` crate:
+
+  - the `Error` type
+  - all option iteration related triaits and types: `OptionsExt`, `TryFromOption` and all block types
+
   That is a new public dependency.
+
+* Move option processing over to `coap-message-utils`.
 
 # Changes in 0.5.0-alpha.2
 

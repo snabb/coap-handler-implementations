@@ -38,16 +38,11 @@
 //! check) that prior wrappers took care of them.
 #![doc = document_features::document_features!()]
 #![no_std]
-#![cfg_attr(
-    feature = "nontrivial_option_processing",
-    feature(type_alias_impl_trait, impl_trait_in_assoc_type)
-)]
 #![cfg_attr(feature = "_nightly_docs", feature(doc_auto_cfg))]
 
 use coap_message::{MinimalWritableMessage, MutableWritableMessage, ReadableMessage};
 
 pub mod helpers;
-pub mod option_processing;
 pub mod wkc;
 mod wkc_implementation;
 #[cfg(feature = "leaky_names")]
