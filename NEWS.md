@@ -1,4 +1,6 @@
-# Changes in *next*
+# Changes in 0.5.0
+
+*This is a breaking change relative to alpha.2*
 
 * Move parts over to the `coap-message-utils` crate:
 
