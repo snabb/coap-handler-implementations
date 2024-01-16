@@ -6,7 +6,7 @@ edition = "2021"
 
 description = "Simple implementations of CoAP handlers"
 documentation = "https://docs.rs/coap-handler-implementations/"
-repository = "https://gitlab.com/chrysn/coap-handler-implementations"
+repository = "https://codeberg.org/chrysn/coap-tools"
 keywords = ["coap", "iot"]
 categories = [ "no-std::no-alloc" ]
 license = "MIT OR Apache-2.0"
@@ -52,7 +52,7 @@ serde-std = [ "serde_cbor/std", "serde/std" ]
 _nightly_docs = []
 
 [badges]
-gitlab = { repository = "chrysn/coap-handler-implementations" }
+maintenance = { status = "actively-developed" }
 
 [package.metadata.docs.rs]
 all-features = true

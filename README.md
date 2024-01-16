@@ -1,4 +1,4 @@
-[![Build Status](https://gitlab.com/chrysn/coap-handler-implementations/badges/master/pipeline.svg)](https://gitlab.com/chrysn/coap-handler-implementations/commits/master)
+![Maintenance](https://img.shields.io/badge/maintenance-activly--developed-brightgreen.svg)
 
 # coap-handler-implementations
 
