@@ -226,7 +226,7 @@ where
         response: &mut M,
         request: Self::RequestData,
     ) -> Result<(), Self::BuildResponseError<M>> {
-        Ok(match request.0 {
+        match request.0 {
             Done(r) => response.set_code(M::Code::new(r)?),
             Get(block2) => {
                 let repr = self.handler.get();
@@ -249,7 +249,8 @@ where
                     }
                 }
             }
-        })
+        };
+        Ok(())
     }
 }
 
@@ -306,7 +307,7 @@ where
         response: &mut M,
         request: Self::RequestData,
     ) -> Result<(), Self::BuildResponseError<M>> {
-        Ok(match request.0 {
+        match request.0 {
             Done(r) => response.set_code(M::Code::new(r)?),
             Get(block2) => {
                 let repr = self.handler.get();
@@ -329,6 +330,7 @@ where
                     }
                 }
             }
-        })
+        };
+        Ok(())
     }
 }
