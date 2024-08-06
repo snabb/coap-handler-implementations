@@ -1,17 +1,17 @@
 [package]
 name = "coap-handler-implementations"
 version = "0.5.0"
-authors = ["chrysn <chrysn@fsfe.org>"]
-edition = "2021"
 
 description = "Simple implementations of CoAP handlers"
 documentation = "https://docs.rs/coap-handler-implementations/"
-repository = "https://codeberg.org/chrysn/coap-tools"
-keywords = ["coap", "iot"]
-categories = [ "no-std::no-alloc" ]
-license = "MIT OR Apache-2.0"
 
-rust-version = "1.65"
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lints]
 workspace = true
