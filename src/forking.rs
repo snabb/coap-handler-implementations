@@ -276,7 +276,7 @@ where
     H2: Handler<RequestData = RD2> + Reporting,
 {
     // FIXME: This is copied over from ForkingTreeHandler (and stripped to the general not(feature
-    // = "nontrivial_option_processing") case)
+    // = "_nontrivial_option_processing") case)
     //
     // As it is now it would appear to warrant the Forking{,Tree}Handler unification hinted at the
     // ForkingTreeHandler definition. Not starting the deduplication (which would be warranted by
@@ -401,13 +401,13 @@ where
 
     // FIXME: one of these is copied over to Reporting for ForkingHandler, see there.
 
-    #[cfg(feature = "nontrivial_option_processing")]
+    #[cfg(feature = "_nontrivial_option_processing")]
     type Reporter<'b> = impl Iterator<Item = Self::Record<'b>>
     where
         Self: 'b,
     ;
 
-    #[cfg(feature = "nontrivial_option_processing")]
+    #[cfg(feature = "_nontrivial_option_processing")]
     fn report(&self) -> Self::Reporter<'_> {
         self.h2
             .report()
@@ -420,7 +420,7 @@ where
             }))
     }
 
-    #[cfg(not(feature = "nontrivial_option_processing"))]
+    #[cfg(not(feature = "_nontrivial_option_processing"))]
     type Reporter<'b> = core::iter::Chain<
         core::iter::Map<H2::Reporter<'b>, fn(H2::Record<'b>) -> Self::Record<'b>>,
         core::iter::Map<
@@ -431,7 +431,7 @@ where
     where
         Self: 'b,
     ;
-    #[cfg(not(feature = "nontrivial_option_processing"))]
+    #[cfg(not(feature = "_nontrivial_option_processing"))]
     fn report(&self) -> Self::Reporter<'_> {
         fn first<'c, H1R, H2R>(
             prefixed_prefix: (H1R, &'c [&'c str]),

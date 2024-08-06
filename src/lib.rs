@@ -39,6 +39,10 @@
 #![doc = document_features::document_features!()]
 #![no_std]
 #![cfg_attr(feature = "_nightly_docs", feature(doc_auto_cfg))]
+#![cfg_attr(
+    feature = "_nontrivial_option_processing",
+    feature(impl_trait_in_assoc_type)
+)]
 
 use coap_message::{MinimalWritableMessage, MutableWritableMessage, ReadableMessage};
 

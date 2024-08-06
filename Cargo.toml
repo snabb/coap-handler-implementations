@@ -52,6 +52,10 @@ leaky_names = []
 ## are instructed to properly switch on their std as well.
 serde-std = [ "serde_cbor/std", "serde/std" ]
 
+# Experimental feature from before RPITIT (in Rust 1.75); to be removed as the
+# explicitly typed returns are replaced with impl Trait returns.
+_nontrivial_option_processing = []
+
 _nightly_docs = []
 
 [badges]
