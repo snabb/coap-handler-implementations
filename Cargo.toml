@@ -6,7 +6,7 @@ description = "Simple implementations of CoAP handlers"
 documentation = "https://docs.rs/coap-handler-implementations/"
 
 rust-version.workspace = true
-license = "MIT OR Apache-2.0"
+license.workspace = true
 repository.workspace = true
 authors.workspace = true
 edition.workspace = true
