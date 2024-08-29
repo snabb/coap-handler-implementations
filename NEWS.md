@@ -1,3 +1,12 @@
+# Changs in 0.5.1
+
+* Provide Empty type for TypeRenderable that represents empty payloads in minicbor.
+* Populate a few details from minicbor into response errors (shown only if enabled in coap-message-utils).
+* Update Rust version to 1.79.
+* Documentation updates.
+* Deny unsafe code.
+* Clean up code around deprecated `_nontrivial_options_processing` feature.
+
 # Changes in 0.5.0
 
 *This is a breaking change relative to alpha.2*

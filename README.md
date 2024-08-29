@@ -1,4 +1,4 @@
-# coap-handler-implementations ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![coap-handler-implementations on crates.io](https://img.shields.io/crates/v/coap-handler-implementations)](https://crates.io/crates/coap-handler-implementations) [![coap-handler-implementations on docs.rs](https://docs.rs/coap-handler-implementations/badge.svg)](https://docs.rs/coap-handler-implementations) [![Source Code Repository](https://img.shields.io/badge/Code-On%20Codeberg-blue?logo=Codeberg)](https://codeberg.org/chrysn/coap-tools) ![Rust Version: 1.75.0](https://img.shields.io/badge/rustc-1.75.0-orange.svg)
+# coap-handler-implementations ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![coap-handler-implementations on crates.io](https://img.shields.io/crates/v/coap-handler-implementations)](https://crates.io/crates/coap-handler-implementations) [![coap-handler-implementations on docs.rs](https://docs.rs/coap-handler-implementations/badge.svg)](https://docs.rs/coap-handler-implementations) [![Source Code Repository](https://img.shields.io/badge/Code-On%20Codeberg-blue?logo=Codeberg)](https://codeberg.org/chrysn/coap-tools) ![Rust Version: 1.79.0](https://img.shields.io/badge/rustc-1.79.0-orange.svg)
 
 The `coap-handler-implementations` crate provides a few convenience, example or
 reference implementations of the [coap-handler][__link0] interface.
@@ -33,11 +33,11 @@ they can’t handle them – without the need to mask them out there assuming (w
 check) that prior wrappers took care of them.
 
 
- [__cargo_doc2readme_dependencies_info]: ggGkYW0BYXSEG_W_Gn_kaocAGwCcVPfenh7eGy6gYLEwyIe4G6-xw_FwcbpjYXKEG8lqJecE4DHCG0ewgIvUdAZjG8nCMtXH4CzTG1uW4q9Occk6YWSBg3gcY29hcC1oYW5kbGVyLWltcGxlbWVudGF0aW9uc2UwLjUuMHgcY29hcF9oYW5kbGVyX2ltcGxlbWVudGF0aW9ucw
+ [__cargo_doc2readme_dependencies_info]: ggGkYW0BYXSEG_W_Gn_kaocAGwCcVPfenh7eGy6gYLEwyIe4G6-xw_FwcbpjYXKEG8lqJecE4DHCG0ewgIvUdAZjG8nCMtXH4CzTG1uW4q9Occk6YWSBg3gcY29hcC1oYW5kbGVyLWltcGxlbWVudGF0aW9uc2UwLjUuMXgcY29hcF9oYW5kbGVyX2ltcGxlbWVudGF0aW9ucw
  [__link0]: https://crates.io/crates/coap-handler
  [__link1]: https://doc.rust-lang.org/core/fmt/trait.Write.html
  [__link2]: https://tools.ietf.org/html/rfc7959
- [__link3]: https://docs.rs/coap-handler-implementations/0.5.0/coap_handler_implementations/?search=TypeHandler
+ [__link3]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=TypeHandler
  [__link4]: https://crates.io/crates/serde_cbor
- [__link5]: https://docs.rs/coap-handler-implementations/0.5.0/coap_handler_implementations/?search=ForkingHandler
- [__link6]: https://docs.rs/coap-handler-implementations/0.5.0/coap_handler_implementations/?search=HandlerBuilder::at
+ [__link5]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=ForkingHandler
+ [__link6]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=HandlerBuilder::at
