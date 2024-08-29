@@ -14,7 +14,7 @@ use core::marker::PhantomData;
 
 use serde::Serialize;
 
-/// A type that, at least for minicbor handlers, represents an empty payload.
+/// A type that (for minicbor typed handlers) represents an empty payload.
 ///
 /// This is particularly practical for resources that have a GET and PUT handler that act on
 /// serialized data, but where the POST handler just takes an empty resource.
@@ -39,8 +39,13 @@ impl<'b, C> minicbor::decode::Decode<'b, C> for Empty {
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
 /// [TypeHandler::new].
 pub trait TypeRenderable {
+    /// Output type of the [get()] method, serialized into the response payload.
     type Get;
+    /// Input type of the [post()] method, deserialized from the request payload.
+    ///
+    /// Note that with TypedRenderable in this version, the response is always empty.
     type Post;
+    /// Input type of the [put()] method, deserialized from the request payload.
     type Put;
 
     fn get(&mut self) -> Result<Self::Get, u8> {
