@@ -105,4 +105,4 @@ pub use simple_rendered::{
 };
 
 mod typed_resource;
-pub use typed_resource::{TypeHandler, TypeRenderable, TypeRequestData};
+pub use typed_resource::{Empty, TypeHandler, TypeRenderable, TypeRequestData};

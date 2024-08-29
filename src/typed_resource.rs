@@ -14,6 +14,25 @@ use core::marker::PhantomData;
 
 use serde::Serialize;
 
+/// A type that, at least for minicbor handlers, represents an empty payload.
+///
+/// This is particularly practical for resources that have a GET and PUT handler that act on
+/// serialized data, but where the POST handler just takes an empty resource.
+pub struct Empty;
+
+impl<'b, C> minicbor::decode::Decode<'b, C> for Empty {
+    fn decode(
+        _d: &mut minicbor::decode::Decoder<'b>,
+        _ctx: &mut C,
+    ) -> Result<Self, minicbor::decode::Error> {
+        Err(minicbor::decode::Error::message("No element expected").at(0))
+    }
+
+    fn nil() -> Option<Self> {
+        Some(Empty)
+    }
+}
+
 /// A simple Handler trait that supports GET, POST and/or PUT on a data structure that supports
 /// serde.
 ///
@@ -169,7 +188,8 @@ enum TypeRequestDataE {
 }
 use self::TypeRequestDataE::{Done, Get};
 
-// FIXME for all the below: deduplicate (but not sure how, without HKTs)
+// FIXME for all the below: deduplicate (but not sure how, without HKTs) -- and some alterations
+// have accumulated
 
 impl<H> Handler for TypeHandler<H, SerdeCBORSerialization>
 where
@@ -276,13 +296,18 @@ where
             }
             code::GET => Get(Self::check_get_options(request)?),
             code::POST => {
+                use minicbor::decode::Decode;
                 Self::check_postput_options(request)?;
 
-                // FIXME: allow getting a mutable payload here, which may be hard for general
-                // Message but usually cheap for GNRC-based.
-                let parsed: H::Post =
-                    minicbor::decode(request.payload()).map_err(|_| Error::bad_request())?;
-                Done(self.handler.post(&parsed))
+                let payload = request.payload();
+                match (payload, H::Post::nil()) {
+                    (b"", Some(nil)) => Done(self.handler.post(&nil)),
+                    _ => {
+                        let parsed: H::Post = minicbor::decode(request.payload())
+                            .map_err(|_| Error::bad_request())?;
+                        Done(self.handler.post(&parsed))
+                    }
+                }
             }
             code::PUT => {
                 Self::check_postput_options(request)?;
