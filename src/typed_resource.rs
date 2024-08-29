@@ -279,6 +279,18 @@ where
     }
 }
 
+fn minicbor_error_to_error(mce: minicbor::decode::Error, total_len: usize) -> Error {
+    let mut error = Error::bad_request();
+    // To be refined with https://gitlab.com/twittner/minicbor/-/merge_requests/47
+    if mce.is_end_of_input() {
+        error = Error::bad_request_with_rbep(total_len);
+    };
+    if mce.is_type_mismatch() {
+        error = error.with_title("Type mismatch")
+    }
+    error
+}
+
 impl<H> Handler for TypeHandler<H, MiniCBORSerialization>
 where
     H: TypeRenderable,
@@ -307,9 +319,11 @@ where
                 let payload = request.payload();
                 match (payload, H::Post::nil()) {
                     (b"", Some(nil)) => Done(self.handler.post(&nil)),
-                    _ => {
-                        let parsed: H::Post = minicbor::decode(request.payload())
-                            .map_err(|_| Error::bad_request())?;
+                    (payload, _) => {
+                        let parsed: H::Post =
+                            minicbor::decode(payload).map_err(|deserialize_error| {
+                                minicbor_error_to_error(deserialize_error, payload.len())
+                            })?;
                         Done(self.handler.post(&parsed))
                     }
                 }
@@ -317,8 +331,11 @@ where
             code::PUT => {
                 Self::check_postput_options(request)?;
 
-                let parsed: H::Put =
-                    minicbor::decode(request.payload()).map_err(|_| Error::bad_request())?;
+                let payload = request.payload();
+
+                let parsed: H::Put = minicbor::decode(payload).map_err(|deserialize_error| {
+                    minicbor_error_to_error(deserialize_error, payload.len())
+                })?;
                 Done(self.handler.put(&parsed))
             }
             _ => Done(code::METHOD_NOT_ALLOWED),
