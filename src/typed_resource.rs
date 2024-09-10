@@ -249,16 +249,8 @@ where
     }
 }
 
-fn minicbor_error_to_error(mce: minicbor::decode::Error, total_len: usize) -> Error {
-    let mut error = Error::bad_request();
-    // To be refined with https://gitlab.com/twittner/minicbor/-/merge_requests/47
-    if mce.is_end_of_input() {
-        error = Error::bad_request_with_rbep(total_len);
-    };
-    if mce.is_type_mismatch() {
-        error = error.with_title("Type mismatch")
-    }
-    error
+trait ToTypedResourceError {
+    fn into_general_error(self, total_len: usize) -> Error;
 }
 
 macro_rules! for_each_minicbor {
@@ -322,7 +314,7 @@ macro_rules! for_each_minicbor {
                             (payload, _) => {
                                 let parsed: H::Post =
                                     $minicbor::decode(payload).map_err(|deserialize_error| {
-                                        minicbor_error_to_error(deserialize_error, payload.len())
+                                        deserialize_error.into_general_error(payload.len())
                                     })?;
                                 Done(self.handler.post(&parsed))
                             }
@@ -335,7 +327,7 @@ macro_rules! for_each_minicbor {
 
                         let parsed: H::Put =
                             $minicbor::decode(payload).map_err(|deserialize_error| {
-                                minicbor_error_to_error(deserialize_error, payload.len())
+                                deserialize_error.into_general_error(payload.len())
                             })?;
                         Done(self.handler.put(&parsed))
                     }
@@ -392,3 +384,35 @@ macro_rules! for_each_minicbor {
 
 for_each_minicbor!(minicbor_0_19, MiniCBORSerialization0_19);
 for_each_minicbor!(minicbor_0_24, MiniCBORSerialization0_24);
+
+impl ToTypedResourceError for minicbor_0_19::decode::Error {
+    fn into_general_error(self, total_len: usize) -> Error {
+        let mut error = Error::bad_request();
+        // This version predates https://gitlab.com/twittner/minicbor/-/merge_requests/47
+        if self.is_end_of_input() {
+            error = Error::bad_request_with_rbep(total_len);
+        };
+        if self.is_type_mismatch() {
+            error = error.with_title("Type mismatch")
+        }
+        error
+    }
+}
+
+impl ToTypedResourceError for minicbor_0_24::decode::Error {
+    fn into_general_error(self, total_len: usize) -> Error {
+        let mut error = Error::bad_request();
+        if let Some(position) = self.position() {
+            error = Error::bad_request_with_rbep(position);
+        }
+        if self.is_end_of_input() {
+            // Data is not set, but it's convenient to point that out in the error response just in
+            // case something goes wrong with block-wise transfers
+            error = Error::bad_request_with_rbep(total_len);
+        };
+        if self.is_type_mismatch() {
+            error = error.with_title("Type mismatch")
+        }
+        error
+    }
+}
