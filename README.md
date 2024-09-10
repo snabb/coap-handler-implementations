@@ -33,11 +33,11 @@ they can’t handle them – without the need to mask them out there assuming (w
 check) that prior wrappers took care of them.
 
 
- [__cargo_doc2readme_dependencies_info]: ggGkYW0BYXSEG_W_Gn_kaocAGwCcVPfenh7eGy6gYLEwyIe4G6-xw_FwcbpjYXKEG8lqJecE4DHCG0ewgIvUdAZjG8nCMtXH4CzTG1uW4q9Occk6YWSBg3gcY29hcC1oYW5kbGVyLWltcGxlbWVudGF0aW9uc2UwLjUuMXgcY29hcF9oYW5kbGVyX2ltcGxlbWVudGF0aW9ucw
+ [__cargo_doc2readme_dependencies_info]: ggGkYW0BYXSEG_W_Gn_kaocAGwCcVPfenh7eGy6gYLEwyIe4G6-xw_FwcbpjYXKEG8lqJecE4DHCG0ewgIvUdAZjG8nCMtXH4CzTG1uW4q9Occk6YWSBg3gcY29hcC1oYW5kbGVyLWltcGxlbWVudGF0aW9uc2UwLjUuMngcY29hcF9oYW5kbGVyX2ltcGxlbWVudGF0aW9ucw
  [__link0]: https://crates.io/crates/coap-handler
  [__link1]: https://doc.rust-lang.org/core/fmt/trait.Write.html
  [__link2]: https://tools.ietf.org/html/rfc7959
- [__link3]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=TypeHandler
+ [__link3]: https://docs.rs/coap-handler-implementations/0.5.2/coap_handler_implementations/?search=TypeHandler
  [__link4]: https://crates.io/crates/serde_cbor
- [__link5]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=ForkingHandler
- [__link6]: https://docs.rs/coap-handler-implementations/0.5.1/coap_handler_implementations/?search=HandlerBuilder::at
+ [__link5]: https://docs.rs/coap-handler-implementations/0.5.2/coap_handler_implementations/?search=ForkingHandler
+ [__link6]: https://docs.rs/coap-handler-implementations/0.5.2/coap_handler_implementations/?search=HandlerBuilder::at

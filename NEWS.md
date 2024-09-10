@@ -1,3 +1,8 @@
+# Changs in 0.5.2
+
+* Support minicbor 0.24 for TypeRenderable.
+* Documentation updates.
+
 # Changs in 0.5.1
 
 * Provide Empty type for TypeRenderable that represents empty payloads in minicbor.
