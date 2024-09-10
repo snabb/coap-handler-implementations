@@ -28,6 +28,7 @@ coap-numbers = { version = "^0.2.2", default-features = false }
 
 # For the typed_resource versions
 minicbor_0_19 = { package = "minicbor", version = "0.19", default-features = false }
+minicbor_0_24 = { package = "minicbor", version = "0.24.4", default-features = false }
 ciborium-io = { version = "0.2", default-features = false }
 
 embedded-io = "0.4"
