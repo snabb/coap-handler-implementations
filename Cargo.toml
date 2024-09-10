@@ -22,7 +22,7 @@ coap-handler = "0.2.0-alpha.1"
 
 serde_cbor = { version = "0.11", default-features = false }
 serde = { version = "^1.0.69", default-features = false, features = ["derive"] }
-windowed-infinity = { version = "^0.1.4", features = [ "with_serde_cbor", "with_minicbor_0_19", "with_ciborium", "with_embedded_io_0_4" ] }
+windowed-infinity = { version = "^0.1.5", features = [ "with_serde_cbor", "with_minicbor_0_19", "with_minicbor_0_24", "with_ciborium", "with_embedded_io_0_4" ] }
 crc = { version = "^3", default-features = false }
 coap-numbers = { version = "^0.2.2", default-features = false }
 
