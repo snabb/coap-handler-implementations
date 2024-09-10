@@ -255,21 +255,6 @@ trait ToTypedResourceError {
 
 macro_rules! for_each_minicbor {
     ($minicbor:ident, $mcstype:ident) => {
-        impl<H> TypeHandler<H, $mcstype>
-        where
-            H: TypeRenderable,
-            H::Get: for<'de> $minicbor::Encode<()>,
-            H::Post: for<'de> $minicbor::Decode<'de, ()>,
-            H::Put: for<'de> $minicbor::Decode<'de, ()>,
-        {
-            pub fn new_minicbor(handler: H) -> Self {
-                TypeHandler {
-                    handler,
-                    _phantom: PhantomData,
-                }
-            }
-        }
-
         impl<'b, C> $minicbor::decode::Decode<'b, C> for Empty {
             fn decode(
                 _d: &mut $minicbor::decode::Decoder<'b>,
@@ -384,6 +369,36 @@ macro_rules! for_each_minicbor {
 
 for_each_minicbor!(minicbor_0_19, MiniCBORSerialization0_19);
 for_each_minicbor!(minicbor_0_24, MiniCBORSerialization0_24);
+
+impl<H> TypeHandler<H, MiniCBORSerialization0_19>
+where
+    H: TypeRenderable,
+    H::Get: for<'de> minicbor_0_19::Encode<()>,
+    H::Post: for<'de> minicbor_0_19::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_0_19::Decode<'de, ()>,
+{
+    pub fn new_minicbor(handler: H) -> Self {
+        TypeHandler {
+            handler,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<H> TypeHandler<H, MiniCBORSerialization0_24>
+where
+    H: TypeRenderable,
+    H::Get: for<'de> minicbor_0_24::Encode<()>,
+    H::Post: for<'de> minicbor_0_24::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_0_24::Decode<'de, ()>,
+{
+    pub fn new_minicbor_0_24(handler: H) -> Self {
+        TypeHandler {
+            handler,
+            _phantom: PhantomData,
+        }
+    }
+}
 
 impl ToTypedResourceError for minicbor_0_19::decode::Error {
     fn into_general_error(self, total_len: usize) -> Error {
