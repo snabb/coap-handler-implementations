@@ -20,6 +20,8 @@ use serde::Serialize;
 /// serialized data, but where the POST handler just takes an empty resource.
 pub struct Empty;
 
+use minicbor_0_19 as minicbor;
+
 impl<'b, C> minicbor::decode::Decode<'b, C> for Empty {
     fn decode(
         _d: &mut minicbor::decode::Decoder<'b>,
