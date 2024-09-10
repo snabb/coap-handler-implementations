@@ -146,6 +146,7 @@ where
     H::Post: for<'de> serde::Deserialize<'de>,
     H::Put: for<'de> serde::Deserialize<'de>,
 {
+    /// Wrap a handler that uses [serde::Serialize] / [serde::Deserialize] through [serde_cbor]
     pub fn new(handler: H) -> Self {
         TypeHandler {
             handler,
@@ -377,6 +378,7 @@ where
     H::Post: for<'de> minicbor_0_19::Decode<'de, ()>,
     H::Put: for<'de> minicbor_0_19::Decode<'de, ()>,
 {
+    /// Wrap a handler through minicbor 0.19
     pub fn new_minicbor(handler: H) -> Self {
         TypeHandler {
             handler,
@@ -392,6 +394,7 @@ where
     H::Post: for<'de> minicbor_0_24::Decode<'de, ()>,
     H::Put: for<'de> minicbor_0_24::Decode<'de, ()>,
 {
+    /// Wrap a handler through minicbor 0.24
     pub fn new_minicbor_0_24(handler: H) -> Self {
         TypeHandler {
             handler,
