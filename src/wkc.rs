@@ -201,7 +201,8 @@ pub fn write_link_format(
     for record in report.report() {
         if !first {
             write!(w, ",")?;
-            first = true;
+        } else {
+            first = false;
         }
         write!(w, "<")?;
         for p in prefix.iter() {
