@@ -26,13 +26,13 @@ pub struct Empty;
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
 /// [TypeHandler::new].
 pub trait TypeRenderable {
-    /// Output type of the [get()] method, serialized into the response payload.
+    /// Output type of the [get()][Self::get()] method, serialized into the response payload.
     type Get;
-    /// Input type of the [post()] method, deserialized from the request payload.
+    /// Input type of the [post()][Self::post()] method, deserialized from the request payload.
     ///
     /// Note that with TypedRenderable in this version, the response is always empty.
     type Post;
-    /// Input type of the [put()] method, deserialized from the request payload.
+    /// Input type of the [put()][Self::put()] method, deserialized from the request payload.
     type Put;
 
     fn get(&mut self) -> Result<Self::Get, u8> {
