@@ -192,6 +192,18 @@ impl<H: Handler> Reporting for ConstantSingleRecordReport<'_, H> {
 /// Resources that don't ask that information at construction time (it is gone at run time) can not
 /// produce meaningful link-format links to their own resources; they could produce output in HTML
 /// or CoRAL, but there are currently no Reporting renderers for those.
+///
+/// ```
+/// use coap_handler_implementations::{wkc::write_link_format, *};
+/// let mut out = String::new();
+/// write_link_format(&mut out,
+///     &new_dispatcher()
+///         .at(&["name"], SimpleRendered::new_typed_str("Demo program", Some(0)))
+///         .at(&["version"], SimpleRendered::new_typed_str("0.8.15", Some(0))),
+///     &["dev"]
+///     ).unwrap();
+/// assert_eq!(out, "</dev/name>,</dev/version>");
+/// ```
 pub fn write_link_format(
     w: &mut impl core::fmt::Write,
     report: &impl Reporting,
