@@ -286,12 +286,13 @@ where
     // (After that, could be that it's warranted as it's now more than a few 4-liners, could be
     // that not).
 
-    type Record<'b> = ForkingRecord<PrefixedRecord<'b, H1::Record<'b>>, H2::Record<'b>>
+    type Record<'b>
+        = ForkingRecord<PrefixedRecord<'b, H1::Record<'b>>, H2::Record<'b>>
     where
-        Self: 'b,
-    ;
+        Self: 'b;
 
-    type Reporter<'b> = core::iter::Chain<
+    type Reporter<'b>
+        = core::iter::Chain<
         core::iter::Map<H2::Reporter<'b>, fn(H2::Record<'b>) -> Self::Record<'b>>,
         core::iter::Map<
             core::iter::Zip<H1::Reporter<'b>, core::iter::Repeat<&'b [&'b str]>>,
@@ -299,8 +300,7 @@ where
         >,
     >
     where
-        Self: 'b,
-    ;
+        Self: 'b;
     fn report(&self) -> Self::Reporter<'_> {
         fn first<'c, H1R, H2R>(
             prefixed_prefix: (H1R, &'c [&'c str]),
@@ -394,18 +394,18 @@ where
     H1: Handler<RequestData = RD1> + Reporting,
     H2: Handler<RequestData = RD2> + Reporting,
 {
-    type Record<'b> = ForkingRecord<PrefixedRecord<'b, H1::Record<'b>>, H2::Record<'b>>
+    type Record<'b>
+        = ForkingRecord<PrefixedRecord<'b, H1::Record<'b>>, H2::Record<'b>>
     where
-        Self: 'b,
-    ;
+        Self: 'b;
 
     // FIXME: one of these is copied over to Reporting for ForkingHandler, see there.
 
     #[cfg(feature = "_nontrivial_option_processing")]
-    type Reporter<'b> = impl Iterator<Item = Self::Record<'b>>
+    type Reporter<'b>
+        = impl Iterator<Item = Self::Record<'b>>
     where
-        Self: 'b,
-    ;
+        Self: 'b;
 
     #[cfg(feature = "_nontrivial_option_processing")]
     fn report(&self) -> Self::Reporter<'_> {
@@ -421,7 +421,8 @@ where
     }
 
     #[cfg(not(feature = "_nontrivial_option_processing"))]
-    type Reporter<'b> = core::iter::Chain<
+    type Reporter<'b>
+        = core::iter::Chain<
         core::iter::Map<H2::Reporter<'b>, fn(H2::Record<'b>) -> Self::Record<'b>>,
         core::iter::Map<
             core::iter::Zip<H1::Reporter<'b>, core::iter::Repeat<&'b [&'b str]>>,
@@ -429,8 +430,7 @@ where
         >,
     >
     where
-        Self: 'b,
-    ;
+        Self: 'b;
     #[cfg(not(feature = "_nontrivial_option_processing"))]
     fn report(&self) -> Self::Reporter<'_> {
         fn first<'c, H1R, H2R>(

@@ -142,14 +142,14 @@ pub struct MaskingUriUpToPath<'m, M: ReadableMessage>(pub &'m M);
 
 impl<'m, M: ReadableMessage> ReadableMessage for MaskingUriUpToPath<'m, M> {
     type Code = M::Code;
-    type MessageOption<'a> = M::MessageOption<'a>
+    type MessageOption<'a>
+        = M::MessageOption<'a>
     where
-        Self: 'a,
-    ;
-    type OptionsIter<'a> = MaskingUriUpToPathIter<M::OptionsIter<'a>>
+        Self: 'a;
+    type OptionsIter<'a>
+        = MaskingUriUpToPathIter<M::OptionsIter<'a>>
     where
-        Self: 'a,
-    ;
+        Self: 'a;
 
     fn options(&self) -> Self::OptionsIter<'_> {
         MaskingUriUpToPathIter(self.0.options())
@@ -199,14 +199,14 @@ impl<'m, M: ReadableMessage> MaskingUriUpToPathN<'m, M> {
 
 impl<'m, M: ReadableMessage> ReadableMessage for MaskingUriUpToPathN<'m, M> {
     type Code = M::Code;
-    type MessageOption<'a> = M::MessageOption<'a>
+    type MessageOption<'a>
+        = M::MessageOption<'a>
     where
-        Self: 'a,
-    ;
-    type OptionsIter<'a> = MaskingUriUpToPathNIter<M::OptionsIter<'a>>
+        Self: 'a;
+    type OptionsIter<'a>
+        = MaskingUriUpToPathNIter<M::OptionsIter<'a>>
     where
-        Self: 'a,
-    ;
+        Self: 'a;
 
     fn options(&self) -> Self::OptionsIter<'_> {
         MaskingUriUpToPathNIter {

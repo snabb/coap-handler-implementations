@@ -169,14 +169,14 @@ impl<H: Reporting + Handler> Handler for WellKnownCore<H> {
 /// wasteful in terms of computation (as the inner one will never be hit), but can be convenient
 /// for composition in examples.
 impl<H: Reporting + Handler> Reporting for WellKnownCore<H> {
-    type Record<'res> = H::Record<'res>
+    type Record<'res>
+        = H::Record<'res>
     where
-        H: 'res,
-    ;
-    type Reporter<'res> = H::Reporter<'res>
+        H: 'res;
+    type Reporter<'res>
+        = H::Reporter<'res>
     where
-        H: 'res,
-    ;
+        H: 'res;
 
     fn report(&self) -> Self::Reporter<'_> {
         self.0.report()

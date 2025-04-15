@@ -118,14 +118,14 @@ impl<T> Reporting for SimpleRendered<T>
 where
     T: SimpleRenderable,
 {
-    type Record<'a> = wkc::EmptyRecord
+    type Record<'a>
+        = wkc::EmptyRecord
     where
-        Self: 'a,
-    ;
-    type Reporter<'a> = core::iter::Once<wkc::EmptyRecord>
+        Self: 'a;
+    type Reporter<'a>
+        = core::iter::Once<wkc::EmptyRecord>
     where
-        Self: 'a,
-    ;
+        Self: 'a;
 
     fn report(&self) -> Self::Reporter<'_> {
         // Using a ConstantSliceRecord instead would be tempting, but that'd need a const return

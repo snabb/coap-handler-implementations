@@ -66,14 +66,14 @@ impl Record for EmptyRecord {
 }
 
 impl<H: Handler> Reporting for NotReporting<H> {
-    type Record<'a> = EmptyRecord
+    type Record<'a>
+        = EmptyRecord
     where
-        Self: 'a,
-    ;
-    type Reporter<'a> = core::iter::Empty<EmptyRecord>
+        Self: 'a;
+    type Reporter<'a>
+        = core::iter::Empty<EmptyRecord>
     where
-        Self: 'a,
-    ;
+        Self: 'a;
 
     fn report(&self) -> Self::Reporter<'_> {
         core::iter::empty()
@@ -165,14 +165,14 @@ impl<'a> Record for ConstantSliceRecord<'a> {
 }
 
 impl<'a, H: Handler> Reporting for ConstantSingleRecordReport<'a, H> {
-    type Record<'b> = ConstantSliceRecord<'b>
+    type Record<'b>
+        = ConstantSliceRecord<'b>
     where
-        Self: 'b,
-    ;
-    type Reporter<'b> = core::iter::Once<ConstantSliceRecord<'b>>
+        Self: 'b;
+    type Reporter<'b>
+        = core::iter::Once<ConstantSliceRecord<'b>>
     where
-        Self: 'b,
-    ;
+        Self: 'b;
 
     fn report(&self) -> Self::Reporter<'_> {
         core::iter::once(ConstantSliceRecord {
