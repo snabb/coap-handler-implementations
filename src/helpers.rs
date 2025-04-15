@@ -140,7 +140,7 @@ where
 // through the options, and the length is known in advance anyway.
 pub struct MaskingUriUpToPath<'m, M: ReadableMessage>(pub &'m M);
 
-impl<'m, M: ReadableMessage> ReadableMessage for MaskingUriUpToPath<'m, M> {
+impl<M: ReadableMessage> ReadableMessage for MaskingUriUpToPath<'_, M> {
     type Code = M::Code;
     type MessageOption<'a>
         = M::MessageOption<'a>
@@ -197,7 +197,7 @@ impl<'m, M: ReadableMessage> MaskingUriUpToPathN<'m, M> {
     }
 }
 
-impl<'m, M: ReadableMessage> ReadableMessage for MaskingUriUpToPathN<'m, M> {
+impl<M: ReadableMessage> ReadableMessage for MaskingUriUpToPathN<'_, M> {
     type Code = M::Code;
     type MessageOption<'a>
         = M::MessageOption<'a>

@@ -137,7 +137,7 @@ where
     }
 }
 
-impl<'a, OldRD, OldH> HandlerBuilder<'a, OldRD> for OldH
+impl<OldRD, OldH> HandlerBuilder<'_, OldRD> for OldH
 where
     Self: Handler<RequestData = OldRD> + Sized,
 {
@@ -160,7 +160,7 @@ pub trait ReportingHandlerBuilder<'a, OldRD>: HandlerBuilder<'a, OldRD> + Report
     }
 }
 
-impl<'a, OldRD, OldH> ReportingHandlerBuilder<'a, OldRD> for OldH
+impl<OldRD, OldH> ReportingHandlerBuilder<'_, OldRD> for OldH
 where
     OldH: Handler<RequestData = OldRD> + Reporting,
 {
@@ -206,7 +206,7 @@ where
     }
 }
 
-impl<'a, RD1, H1, RD2, H2> Handler for ForkingHandler<'a, H1, H2>
+impl<RD1, H1, RD2, H2> Handler for ForkingHandler<'_, H1, H2>
 where
     H1: Handler<RequestData = RD1>,
     H2: Handler<RequestData = RD2>,
@@ -270,7 +270,7 @@ where
     }
 }
 
-impl<'a, RD1, H1, RD2, H2> Reporting for ForkingHandler<'a, H1, H2>
+impl<RD1, H1, RD2, H2> Reporting for ForkingHandler<'_, H1, H2>
 where
     H1: Handler<RequestData = RD1> + Reporting,
     H2: Handler<RequestData = RD2> + Reporting,
@@ -330,7 +330,7 @@ pub struct ForkingTreeHandler<'a, H1, H2> {
     h1_condition: &'a [&'a str],
 }
 
-impl<'a, RD1, H1, RD2, H2> Handler for ForkingTreeHandler<'a, H1, H2>
+impl<RD1, H1, RD2, H2> Handler for ForkingTreeHandler<'_, H1, H2>
 where
     H1: Handler<RequestData = RD1>,
     H2: Handler<RequestData = RD2>,
@@ -389,7 +389,7 @@ where
     }
 }
 
-impl<'a, RD1, H1, RD2, H2> Reporting for ForkingTreeHandler<'a, H1, H2>
+impl<RD1, H1, RD2, H2> Reporting for ForkingTreeHandler<'_, H1, H2>
 where
     H1: Handler<RequestData = RD1> + Reporting,
     H2: Handler<RequestData = RD2> + Reporting,

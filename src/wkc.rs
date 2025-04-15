@@ -121,7 +121,7 @@ impl<'a, H: Handler> ConstantSingleRecordReport<'a, H> {
 }
 
 // Is DerefMut appropriate? Would be less code...
-impl<'a, H: Handler> Handler for ConstantSingleRecordReport<'a, H> {
+impl<H: Handler> Handler for ConstantSingleRecordReport<'_, H> {
     type RequestData = H::RequestData;
     type ExtractRequestError = H::ExtractRequestError;
     type BuildResponseError<M: MinimalWritableMessage> = H::BuildResponseError<M>;
@@ -164,7 +164,7 @@ impl<'a> Record for ConstantSliceRecord<'a> {
     }
 }
 
-impl<'a, H: Handler> Reporting for ConstantSingleRecordReport<'a, H> {
+impl<H: Handler> Reporting for ConstantSingleRecordReport<'_, H> {
     type Record<'b>
         = ConstantSliceRecord<'b>
     where

@@ -134,7 +134,7 @@ where
     }
 }
 
-impl<'a> SimpleRenderable for &'a str {
+impl SimpleRenderable for &str {
     fn render<W>(&mut self, writer: &mut W)
     where
         W: core::fmt::Write,
@@ -154,7 +154,7 @@ pub struct TypedStaticRenderable<'a> {
     content_format: Option<u16>,
 }
 
-impl<'a> SimpleRenderable for TypedStaticRenderable<'a> {
+impl SimpleRenderable for TypedStaticRenderable<'_> {
     fn render<W: embedded_io::blocking::Write + core::fmt::Write>(&mut self, writer: &mut W) {
         writer.write_all(self.data).unwrap();
     }
