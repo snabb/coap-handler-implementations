@@ -59,6 +59,7 @@ mod sealed {
     pub struct SerdeCBORSerialization;
     pub struct MiniCBORSerialization0_19;
     pub struct MiniCBORSerialization0_24;
+    pub struct MiniCBORSerialization0_26;
 }
 use sealed::*;
 
@@ -370,6 +371,7 @@ macro_rules! for_each_minicbor {
 
 for_each_minicbor!(minicbor_0_19, MiniCBORSerialization0_19);
 for_each_minicbor!(minicbor_0_24, MiniCBORSerialization0_24);
+for_each_minicbor!(minicbor_0_26, MiniCBORSerialization0_26);
 
 impl<H> TypeHandler<H, MiniCBORSerialization0_19>
 where
@@ -403,6 +405,22 @@ where
     }
 }
 
+impl<H> TypeHandler<H, MiniCBORSerialization0_26>
+where
+    H: TypeRenderable,
+    H::Get: for<'de> minicbor_0_24::Encode<()>,
+    H::Post: for<'de> minicbor_0_24::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_0_24::Decode<'de, ()>,
+{
+    /// Wrap a handler through minicbor 0.26
+    pub fn new_minicbor_0_26(handler: H) -> Self {
+        TypeHandler {
+            handler,
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl ToTypedResourceError for minicbor_0_19::decode::Error {
     fn into_general_error(self, total_len: usize) -> Error {
         let mut error = Error::bad_request();
@@ -417,20 +435,27 @@ impl ToTypedResourceError for minicbor_0_19::decode::Error {
     }
 }
 
-impl ToTypedResourceError for minicbor_0_24::decode::Error {
-    fn into_general_error(self, total_len: usize) -> Error {
-        let mut error = Error::bad_request();
-        if let Some(position) = self.position() {
-            error = Error::bad_request_with_rbep(position);
+macro_rules! minicbor_24plus_error {
+    ($minicbor:ident) => {
+        impl ToTypedResourceError for $minicbor::decode::Error {
+            fn into_general_error(self, total_len: usize) -> Error {
+                let mut error = Error::bad_request();
+                if let Some(position) = self.position() {
+                    error = Error::bad_request_with_rbep(position);
+                }
+                if self.is_end_of_input() {
+                    // Data is not set, but it's convenient to point that out in the error response just in
+                    // case something goes wrong with block-wise transfers
+                    error = Error::bad_request_with_rbep(total_len);
+                };
+                if self.is_type_mismatch() {
+                    error = error.with_title("Type mismatch")
+                }
+                error
+            }
         }
-        if self.is_end_of_input() {
-            // Data is not set, but it's convenient to point that out in the error response just in
-            // case something goes wrong with block-wise transfers
-            error = Error::bad_request_with_rbep(total_len);
-        };
-        if self.is_type_mismatch() {
-            error = error.with_title("Type mismatch")
-        }
-        error
-    }
+    };
 }
+
+minicbor_24plus_error!(minicbor_0_24);
+minicbor_24plus_error!(minicbor_0_26);
