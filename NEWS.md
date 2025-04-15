@@ -1,4 +1,10 @@
-# Changs in 0.5.2
+# Changes in 0.5.3
+
+* Fix missing comman in rendered link-format.
+* Support minicbor 0.26 for TypeRenderable.
+* Documentation fixes.
+
+# Changes in 0.5.2
 
 * Support minicbor 0.24 for TypeRenderable.
 * Documentation updates.
