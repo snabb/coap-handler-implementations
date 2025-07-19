@@ -60,6 +60,7 @@ mod sealed {
     pub struct MiniCBORSerialization0_19;
     pub struct MiniCBORSerialization0_24;
     pub struct MiniCBORSerialization0_26;
+    pub struct MiniCBORSerialization1;
 }
 use sealed::*;
 
@@ -372,6 +373,7 @@ macro_rules! for_each_minicbor {
 for_each_minicbor!(minicbor_0_19, MiniCBORSerialization0_19);
 for_each_minicbor!(minicbor_0_24, MiniCBORSerialization0_24);
 for_each_minicbor!(minicbor_0_26, MiniCBORSerialization0_26);
+for_each_minicbor!(minicbor_1, MiniCBORSerialization1);
 
 impl<H> TypeHandler<H, MiniCBORSerialization0_19>
 where
@@ -421,6 +423,22 @@ where
     }
 }
 
+impl<H> TypeHandler<H, MiniCBORSerialization1>
+where
+    H: TypeRenderable,
+    H::Get: for<'de> minicbor_1::Encode<()>,
+    H::Post: for<'de> minicbor_1::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_1::Decode<'de, ()>,
+{
+    /// Wrap a handler through minicbor 0.26
+    pub fn new_minicbor_1(handler: H) -> Self {
+        TypeHandler {
+            handler,
+            _phantom: PhantomData,
+        }
+    }
+}
+
 impl ToTypedResourceError for minicbor_0_19::decode::Error {
     fn into_general_error(self, total_len: usize) -> Error {
         let mut error = Error::bad_request();
@@ -459,3 +477,4 @@ macro_rules! minicbor_24plus_error {
 
 minicbor_24plus_error!(minicbor_0_24);
 minicbor_24plus_error!(minicbor_0_26);
+minicbor_24plus_error!(minicbor_1);
