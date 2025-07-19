@@ -408,9 +408,9 @@ where
 impl<H> TypeHandler<H, MiniCBORSerialization0_26>
 where
     H: TypeRenderable,
-    H::Get: for<'de> minicbor_0_24::Encode<()>,
-    H::Post: for<'de> minicbor_0_24::Decode<'de, ()>,
-    H::Put: for<'de> minicbor_0_24::Decode<'de, ()>,
+    H::Get: for<'de> minicbor_0_26::Encode<()>,
+    H::Post: for<'de> minicbor_0_26::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_0_26::Decode<'de, ()>,
 {
     /// Wrap a handler through minicbor 0.26
     pub fn new_minicbor_0_26(handler: H) -> Self {
