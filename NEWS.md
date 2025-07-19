@@ -1,3 +1,8 @@
+# Changes in 0.5.4
+
+* Support minicbor 1.0 for TypeRenderable.
+* Update Rust version to 1.85 / edition to 2024.
+
 # Changes in 0.5.3
 
 * Fix missing comman in rendered link-format.

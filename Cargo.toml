@@ -1,6 +1,6 @@
 [package]
 name = "coap-handler-implementations"
-version = "0.5.3"
+version = "0.5.4"
 
 description = "Simple implementations of CoAP handlers"
 documentation = "https://docs.rs/coap-handler-implementations/"
