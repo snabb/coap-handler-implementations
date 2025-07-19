@@ -2,14 +2,14 @@
 
 use coap_handler::{Attribute, Handler, Reporting};
 use coap_message::{
-    error::RenderableOnMinimal, MessageOption, MinimalWritableMessage, MutableWritableMessage,
-    ReadableMessage,
+    MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
+    error::RenderableOnMinimal,
 };
 use coap_numbers::option;
 
 use crate::forking_helpers::{ForkingRecord, PrefixedRecord};
 use crate::helpers::{MaskingUriUpToPath, MaskingUriUpToPathN};
-use crate::{wkc, wkc_implementation, NeverFound};
+use crate::{NeverFound, wkc, wkc_implementation};
 
 /// Backport of <https://github.com/rust-lang/rust/issues/64295>. The contested points about the
 /// API do not apply.

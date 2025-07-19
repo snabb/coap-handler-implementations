@@ -60,8 +60,8 @@ mod forking_helpers;
 // Merely implemented separately; might move them publicly there later and deprecate them here in
 // preparation for a breakin grename.
 pub use forking::{
-    new_dispatcher, ForkingHandler, ForkingRequestData, ForkingTreeHandler, HandlerBuilder,
-    ReportingHandlerBuilder,
+    ForkingHandler, ForkingRequestData, ForkingTreeHandler, HandlerBuilder,
+    ReportingHandlerBuilder, new_dispatcher,
 };
 
 use coap_handler::Handler;

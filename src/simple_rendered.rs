@@ -1,14 +1,14 @@
 //! Module containing the [SimpleRendered] handler and the [SimpleRenderable] trait its users need.
 
 use crate::helpers::block2_write_with_cf;
-use crate::{wkc, Error};
+use crate::{Error, wkc};
 use coap_handler::{Handler, Reporting};
 use coap_message::{
     Code as _, MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
 };
 use coap_message_utils::option_value::Block2RequestData;
 use coap_numbers::code::{CONTENT, GET};
-use coap_numbers::option::{get_criticality, Criticality, ACCEPT, BLOCK2};
+use coap_numbers::option::{ACCEPT, BLOCK2, Criticality, get_criticality};
 
 /// Information a SimpleRenderable needs to carry from request to response.
 // Newtype wrapper to avoid exposing Block2RequestData

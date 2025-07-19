@@ -6,10 +6,10 @@
 use crate::wkc::write_link_format;
 use coap_handler::{Handler, Reporting};
 use coap_message::{
-    error::RenderableOnMinimal, Code as _, MessageOption, MinimalWritableMessage,
-    MutableWritableMessage, ReadableMessage,
+    Code as _, MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
+    error::RenderableOnMinimal,
 };
-use coap_message_utils::{option_value::Block2RequestData, OptionsExt};
+use coap_message_utils::{OptionsExt, option_value::Block2RequestData};
 use core::fmt::Debug;
 
 const LINK_FORMAT: u16 = 40;
