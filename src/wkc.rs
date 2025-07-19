@@ -218,23 +218,23 @@ pub fn write_link_format(
         }
         write!(w, "<")?;
         for p in prefix.iter() {
-            write!(w, "/{}", p)?;
+            write!(w, "/{p}")?;
         }
         for p in record.path() {
             write!(w, "/{}", p.as_ref())?;
         }
         write!(w, ">")?;
         if let Some(rel) = record.rel() {
-            write!(w, ";rel=\"{}\"", rel)?;
+            write!(w, ";rel=\"{rel}\"")?;
         }
         for attr in record.attributes() {
             match attr {
                 Attribute::Observable => write!(w, ";obs")?,
-                Attribute::ResourceType(s) => write!(w, ";rt=\"{}\"", s)?,
-                Attribute::Interface(s) => write!(w, ";if=\"{}\"", s)?,
-                Attribute::Title(s) => write!(w, ";title=\"{}\"", s)?,
-                Attribute::Ct(s) => write!(w, ";ct={}", s)?,
-                Attribute::Sz(s) => write!(w, ";sz={}", s)?,
+                Attribute::ResourceType(s) => write!(w, ";rt=\"{s}\"")?,
+                Attribute::Interface(s) => write!(w, ";if=\"{s}\"")?,
+                Attribute::Title(s) => write!(w, ";title=\"{s}\"")?,
+                Attribute::Ct(s) => write!(w, ";ct={s}")?,
+                Attribute::Sz(s) => write!(w, ";sz={s}")?,
                 // New attributes are ignored -- as a matter of best practice, when a new attribute
                 // is added, it should be covered here.
                 _ => (),
