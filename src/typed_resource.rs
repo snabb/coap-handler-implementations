@@ -12,8 +12,6 @@ use coap_message_utils::{OptionsExt, option_value::Block2RequestData};
 use coap_numbers::{code, option};
 use core::marker::PhantomData;
 
-use serde::Serialize;
-
 /// A type that (for minicbor typed handlers) represents an empty payload.
 ///
 /// This is particularly practical for resources that have a GET and PUT handler that act on
@@ -56,17 +54,9 @@ mod sealed {
         const CF: Option<u16>;
     }
 
-    pub struct SerdeCBORSerialization;
-    pub struct MiniCBORSerialization0_19;
-    pub struct MiniCBORSerialization0_24;
-    pub struct MiniCBORSerialization0_26;
     pub struct MiniCBORSerialization1;
 }
 use sealed::*;
-
-impl TypeSerializer for SerdeCBORSerialization {
-    const CF: Option<u16> = coap_numbers::content_format::from_str("application/cbor");
-}
 
 /// Wrapper for resource handlers that are implemented in terms of GETting, POSTing or PUTting
 /// objects in CBOR format.
@@ -79,7 +69,7 @@ impl TypeSerializer for SerdeCBORSerialization {
 /// aprameters into additional data available to the [TypeRenderable]) can be built by
 /// forwarding to this (where any critical but already processed options would need to be masked
 /// from the message's option) or taking inspiration from it.
-pub struct TypeHandler<H, S: TypeSerializer = SerdeCBORSerialization>
+pub struct TypeHandler<H, S: TypeSerializer>
 where
     H: TypeRenderable,
 {
@@ -141,22 +131,6 @@ where
     }
 }
 
-impl<H> TypeHandler<H, SerdeCBORSerialization>
-where
-    H: TypeRenderable,
-    H::Get: for<'de> serde::Serialize,
-    H::Post: for<'de> serde::Deserialize<'de>,
-    H::Put: for<'de> serde::Deserialize<'de>,
-{
-    /// Wrap a handler that uses [serde::Serialize] / [serde::Deserialize] through [serde_cbor]
-    pub fn new(handler: H) -> Self {
-        TypeHandler {
-            handler,
-            _phantom: PhantomData,
-        }
-    }
-}
-
 /// Data carried around between a request and its response for [TypeHandler]s
 pub struct TypeRequestData(TypeRequestDataE);
 
@@ -169,12 +143,29 @@ use self::TypeRequestDataE::{Done, Get};
 // FIXME for all the below: deduplicate (but not sure how, without HKTs) -- and some alterations
 // have accumulated
 
-impl<H> Handler for TypeHandler<H, SerdeCBORSerialization>
+trait ToTypedResourceError {
+    fn into_general_error(self, total_len: usize) -> Error;
+}
+
+impl<'b, C> minicbor_2::decode::Decode<'b, C> for Empty {
+    fn decode(
+        _d: &mut minicbor_2::decode::Decoder<'b>,
+        _ctx: &mut C,
+    ) -> Result<Self, minicbor_2::decode::Error> {
+        Err(minicbor_2::decode::Error::message("No element expected").at(0))
+    }
+
+    fn nil() -> Option<Self> {
+        Some(Empty)
+    }
+}
+
+impl<H> Handler for TypeHandler<H, MiniCBORSerialization1>
 where
     H: TypeRenderable,
-    H::Get: for<'de> serde::Serialize,
-    H::Post: for<'de> serde::Deserialize<'de>,
-    H::Put: for<'de> serde::Deserialize<'de>,
+    H::Get: for<'de> minicbor_2::Encode<()>,
+    H::Post: for<'de> minicbor_2::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_2::Decode<'de, ()>,
 {
     type RequestData = TypeRequestData;
     type ExtractRequestError = Error;
@@ -191,21 +182,29 @@ where
             }
             code::GET => Get(Self::check_get_options(request)?),
             code::POST => {
+                use minicbor_2::decode::Decode;
                 Self::check_postput_options(request)?;
 
-                // FIXME: allow getting a mutable payload here, which may be hard for general
-                // Message but usually cheap for GNRC-based.
-                let parsed: H::Post =
-                    serde_cbor::de::from_slice_with_scratch(request.payload(), &mut [])
-                        .map_err(|_| Error::bad_request())?;
-                Done(self.handler.post(&parsed))
+                let payload = request.payload();
+                match (payload, H::Post::nil()) {
+                    (b"", Some(nil)) => Done(self.handler.post(&nil)),
+                    (payload, _) => {
+                        let parsed: H::Post =
+                            minicbor_2::decode(payload).map_err(|deserialize_error| {
+                                deserialize_error.into_general_error(payload.len())
+                            })?;
+                        Done(self.handler.post(&parsed))
+                    }
+                }
             }
             code::PUT => {
                 Self::check_postput_options(request)?;
 
-                let parsed: H::Put =
-                    serde_cbor::de::from_slice_with_scratch(request.payload(), &mut [])
-                        .map_err(|_| Error::bad_request())?;
+                let payload = request.payload();
+
+                let parsed: H::Put = minicbor_2::decode(payload).map_err(|deserialize_error| {
+                    deserialize_error.into_general_error(payload.len())
+                })?;
                 Done(self.handler.put(&parsed))
             }
             _ => Done(code::METHOD_NOT_ALLOWED),
@@ -235,8 +234,10 @@ where
                         match block2_write_with_cf(
                             block2,
                             response,
-                            |win| repr.serialize(&mut serde_cbor::ser::Serializer::new(win)),
-                            SerdeCBORSerialization::CF,
+                            |win| {
+                                minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win))
+                            },
+                            MiniCBORSerialization1::CF,
                         ) {
                             Ok(()) => (),
                             Err(_) => {
@@ -252,204 +253,23 @@ where
     }
 }
 
-trait ToTypedResourceError {
-    fn into_general_error(self, total_len: usize) -> Error;
-}
-
-macro_rules! for_each_minicbor {
-    ($minicbor:ident, $mcstype:ident) => {
-        impl<'b, C> $minicbor::decode::Decode<'b, C> for Empty {
-            fn decode(
-                _d: &mut $minicbor::decode::Decoder<'b>,
-                _ctx: &mut C,
-            ) -> Result<Self, $minicbor::decode::Error> {
-                Err($minicbor::decode::Error::message("No element expected").at(0))
-            }
-
-            fn nil() -> Option<Self> {
-                Some(Empty)
-            }
-        }
-
-        impl<H> Handler for TypeHandler<H, $mcstype>
-        where
-            H: TypeRenderable,
-            H::Get: for<'de> $minicbor::Encode<()>,
-            H::Post: for<'de> $minicbor::Decode<'de, ()>,
-            H::Put: for<'de> $minicbor::Decode<'de, ()>,
-        {
-            type RequestData = TypeRequestData;
-            type ExtractRequestError = Error;
-            type BuildResponseError<M: MinimalWritableMessage> = M::UnionError;
-
-            fn extract_request_data<M: ReadableMessage>(
-                &mut self,
-                request: &M,
-            ) -> Result<Self::RequestData, Error> {
-                Ok(TypeRequestData(match request.code().into() {
-                    code::DELETE => {
-                        Self::check_delete_options(request)?;
-                        Done(self.handler.delete())
-                    }
-                    code::GET => Get(Self::check_get_options(request)?),
-                    code::POST => {
-                        use $minicbor::decode::Decode;
-                        Self::check_postput_options(request)?;
-
-                        let payload = request.payload();
-                        match (payload, H::Post::nil()) {
-                            (b"", Some(nil)) => Done(self.handler.post(&nil)),
-                            (payload, _) => {
-                                let parsed: H::Post =
-                                    $minicbor::decode(payload).map_err(|deserialize_error| {
-                                        deserialize_error.into_general_error(payload.len())
-                                    })?;
-                                Done(self.handler.post(&parsed))
-                            }
-                        }
-                    }
-                    code::PUT => {
-                        Self::check_postput_options(request)?;
-
-                        let payload = request.payload();
-
-                        let parsed: H::Put =
-                            $minicbor::decode(payload).map_err(|deserialize_error| {
-                                deserialize_error.into_general_error(payload.len())
-                            })?;
-                        Done(self.handler.put(&parsed))
-                    }
-                    _ => Done(code::METHOD_NOT_ALLOWED),
-                }))
-            }
-
-            fn estimate_length(&mut self, request: &Self::RequestData) -> usize {
-                match &request.0 {
-                    Done(_) => 4,
-                    Get(block) => (block.size() + 25).into(), // FIXME: hard-coded copied over from block2_write_with_cf's estimated overhead
-                }
-            }
-
-            fn build_response<M: MutableWritableMessage>(
-                &mut self,
-                response: &mut M,
-                request: Self::RequestData,
-            ) -> Result<(), Self::BuildResponseError<M>> {
-                match request.0 {
-                    Done(r) => response.set_code(M::Code::new(r)?),
-                    Get(block2) => {
-                        let repr = self.handler.get();
-                        match repr {
-                            Err(e) => response.set_code(M::Code::new(e)?),
-                            Ok(repr) => {
-                                response.set_code(M::Code::new(code::CONTENT)?);
-                                match block2_write_with_cf(
-                                    block2,
-                                    response,
-                                    |win| $minicbor::encode(&repr, win),
-                                    $mcstype::CF,
-                                ) {
-                                    Ok(()) => (),
-                                    Err(_) => {
-                                        // FIXME: Rewind all the written options
-                                        response
-                                            .set_code(M::Code::new(code::INTERNAL_SERVER_ERROR)?);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-                Ok(())
-            }
-        }
-
-        impl TypeSerializer for $mcstype {
-            const CF: Option<u16> = coap_numbers::content_format::from_str("application/cbor");
-        }
-    };
-}
-
-for_each_minicbor!(minicbor_0_19, MiniCBORSerialization0_19);
-for_each_minicbor!(minicbor_0_24, MiniCBORSerialization0_24);
-for_each_minicbor!(minicbor_0_26, MiniCBORSerialization0_26);
-for_each_minicbor!(minicbor_1, MiniCBORSerialization1);
-
-impl<H> TypeHandler<H, MiniCBORSerialization0_19>
-where
-    H: TypeRenderable,
-    H::Get: for<'de> minicbor_0_19::Encode<()>,
-    H::Post: for<'de> minicbor_0_19::Decode<'de, ()>,
-    H::Put: for<'de> minicbor_0_19::Decode<'de, ()>,
-{
-    /// Wrap a handler through minicbor 0.19
-    pub fn new_minicbor(handler: H) -> Self {
-        TypeHandler {
-            handler,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<H> TypeHandler<H, MiniCBORSerialization0_24>
-where
-    H: TypeRenderable,
-    H::Get: for<'de> minicbor_0_24::Encode<()>,
-    H::Post: for<'de> minicbor_0_24::Decode<'de, ()>,
-    H::Put: for<'de> minicbor_0_24::Decode<'de, ()>,
-{
-    /// Wrap a handler through minicbor 0.24
-    pub fn new_minicbor_0_24(handler: H) -> Self {
-        TypeHandler {
-            handler,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<H> TypeHandler<H, MiniCBORSerialization0_26>
-where
-    H: TypeRenderable,
-    H::Get: for<'de> minicbor_0_26::Encode<()>,
-    H::Post: for<'de> minicbor_0_26::Decode<'de, ()>,
-    H::Put: for<'de> minicbor_0_26::Decode<'de, ()>,
-{
-    /// Wrap a handler through minicbor 0.26
-    pub fn new_minicbor_0_26(handler: H) -> Self {
-        TypeHandler {
-            handler,
-            _phantom: PhantomData,
-        }
-    }
+impl TypeSerializer for MiniCBORSerialization1 {
+    const CF: Option<u16> = coap_numbers::content_format::from_str("application/cbor");
 }
 
 impl<H> TypeHandler<H, MiniCBORSerialization1>
 where
     H: TypeRenderable,
-    H::Get: for<'de> minicbor_1::Encode<()>,
-    H::Post: for<'de> minicbor_1::Decode<'de, ()>,
-    H::Put: for<'de> minicbor_1::Decode<'de, ()>,
+    H::Get: for<'de> minicbor_2::Encode<()>,
+    H::Post: for<'de> minicbor_2::Decode<'de, ()>,
+    H::Put: for<'de> minicbor_2::Decode<'de, ()>,
 {
     /// Wrap a handler through minicbor 0.26
-    pub fn new_minicbor_1(handler: H) -> Self {
+    pub fn new_minicbor_2(handler: H) -> Self {
         TypeHandler {
             handler,
             _phantom: PhantomData,
         }
-    }
-}
-
-impl ToTypedResourceError for minicbor_0_19::decode::Error {
-    fn into_general_error(self, total_len: usize) -> Error {
-        let mut error = Error::bad_request();
-        // This version predates https://gitlab.com/twittner/minicbor/-/merge_requests/47
-        if self.is_end_of_input() {
-            error = Error::bad_request_with_rbep(total_len);
-        };
-        if self.is_type_mismatch() {
-            error = error.with_title("Type mismatch")
-        }
-        error
     }
 }
 
@@ -475,6 +295,4 @@ macro_rules! minicbor_24plus_error {
     };
 }
 
-minicbor_24plus_error!(minicbor_0_24);
-minicbor_24plus_error!(minicbor_0_26);
-minicbor_24plus_error!(minicbor_1);
+minicbor_24plus_error!(minicbor_2);

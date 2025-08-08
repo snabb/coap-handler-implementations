@@ -20,20 +20,17 @@ workspace = true
 coap-message = "0.3.0-alpha.1"
 coap-handler = "0.2.0-alpha.1"
 
-serde_cbor = { version = "0.11", default-features = false }
-serde = { version = "^1.0.69", default-features = false, features = ["derive"] }
-windowed-infinity = { version = "^0.1.8", features = [ "with_serde_cbor", "with_minicbor_0_19", "with_minicbor_0_24", "with_minicbor_0_26", "with_ciborium", "with_embedded_io_0_4", "with_minicbor_1" ] }
+windowed-infinity = "0.2.0"
+tee-embedded-io = "0.1.0"
+extra-embedded-io-adapters = "0.1.0"
+embedded-io-adapters = "0.7.0"
+embedded-io = "0.7"
 crc = { version = "^3", default-features = false }
 coap-numbers = { version = "^0.2.2", default-features = false }
 
 # For the typed_resource versions
-minicbor_0_19 = { package = "minicbor", version = "0.19", default-features = false }
-minicbor_0_24 = { package = "minicbor", version = "0.24.4", default-features = false }
-minicbor_0_26 = { package = "minicbor", version = "0.26", default-features = false }
-minicbor_1 = { package = "minicbor", version = "1", default-features = false }
-ciborium-io = { version = "0.2", default-features = false }
-
-embedded-io = "0.4"
+minicbor_2 = { package = "minicbor", version = "2", default-features = false }
+minicbor-adapters = "0.0.8"
 
 document-features = "0.2"
 
@@ -48,12 +45,6 @@ coap-message-utils = { version = "0.3.0", path = "../coap-message-utils" }
 ## disabling stability guarantees: Don't use this from libraries, for
 ## your dependents will run the risk of accidentally using unstable names.
 leaky_names = []
-
-## This crate has nothing in terms of std to activate, but due to serde's
-## non-additive std feature that extends down to serde_cbor, a user may need to
-## declare that serde's std feature is used just so that all serde implementers
-## are instructed to properly switch on their std as well.
-serde-std = [ "serde_cbor/std", "serde/std" ]
 
 # Experimental feature from before RPITIT (in Rust 1.75); to be removed as the
 # explicitly typed returns are replaced with impl Trait returns.

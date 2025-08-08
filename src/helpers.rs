@@ -2,6 +2,9 @@ use coap_message::{MessageOption, MutableWritableMessage, ReadableMessage};
 use coap_message_utils::option_value::Block2RequestData;
 use coap_numbers::option;
 
+use core::convert::Infallible;
+use extra_embedded_io_adapters::WritableCrc;
+use tee_embedded_io::Tee;
 use windowed_infinity::WindowedInfinity;
 
 // FIXME: Move to fallible operations (but that needs more work on block2_write_with_cf, which is
@@ -34,7 +37,11 @@ pub fn block2_write<F, R>(
     f: F,
 ) -> R
 where
-    F: FnOnce(&mut windowed_infinity::TeeForCrc<'_, '_, u64>) -> R,
+    F: FnOnce(
+        &mut crate::embedded_io::EmbeddedIoOrFmtWrite<
+            Tee<WindowedInfinity<'_>, WritableCrc<'_, u64>, Infallible>,
+        >,
+    ) -> R,
 {
     block2_write_with_cf(block2, response, f, None)
 }
@@ -68,7 +75,11 @@ pub(crate) fn block2_write_with_cf<F, R>(
     cf: Option<u16>,
 ) -> R
 where
-    F: FnOnce(&mut windowed_infinity::TeeForCrc<'_, '_, u64>) -> R,
+    F: FnOnce(
+        &mut crate::embedded_io::EmbeddedIoOrFmtWrite<
+            Tee<WindowedInfinity<'_>, WritableCrc<'_, u64>, Infallible>,
+        >,
+    ) -> R,
 {
     let estimated_option_size = 25; // 9 bytes ETag, up to 5 bytes Block2, up to 5 bytes Size2, 1 byte payload marker
     let payload_budget = response.available_space() - estimated_option_size;
@@ -95,11 +106,15 @@ where
             -(block2.start() as isize),
         );
         let etag = crc::Crc::<u64>::new(&crc::CRC_64_ECMA_182);
-        let mut writer = writer.tee_crc64(&etag);
+        let etag = etag.digest();
+        let mut writer = crate::embedded_io::EmbeddedIoOrFmtWrite(tee_embedded_io::Tee::new(
+            writer,
+            extra_embedded_io_adapters::WritableCrc(etag),
+        ));
 
         let ret = f(&mut writer);
 
-        let (writer, etag) = writer.into_windowed_and_crc();
+        let (writer, extra_embedded_io_adapters::WritableCrc(etag)) = writer.0.into_parts();
         let written = writer.written();
 
         (
