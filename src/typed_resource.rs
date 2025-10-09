@@ -273,26 +273,20 @@ where
     }
 }
 
-macro_rules! minicbor_24plus_error {
-    ($minicbor:ident) => {
-        impl ToTypedResourceError for $minicbor::decode::Error {
-            fn into_general_error(self, total_len: usize) -> Error {
-                let mut error = Error::bad_request();
-                if let Some(position) = self.position() {
-                    error = Error::bad_request_with_rbep(position);
-                }
-                if self.is_end_of_input() {
-                    // Data is not set, but it's convenient to point that out in the error response just in
-                    // case something goes wrong with block-wise transfers
-                    error = Error::bad_request_with_rbep(total_len);
-                };
-                if self.is_type_mismatch() {
-                    error = error.with_title("Type mismatch")
-                }
-                error
-            }
+impl ToTypedResourceError for minicbor_2::decode::Error {
+    fn into_general_error(self, total_len: usize) -> Error {
+        let mut error = Error::bad_request();
+        if let Some(position) = self.position() {
+            error = Error::bad_request_with_rbep(position);
         }
-    };
+        if self.is_end_of_input() {
+            // Data is not set, but it's convenient to point that out in the error response just in
+            // case something goes wrong with block-wise transfers
+            error = Error::bad_request_with_rbep(total_len);
+        };
+        if self.is_type_mismatch() {
+            error = error.with_title("Type mismatch")
+        }
+        error
+    }
 }
-
-minicbor_24plus_error!(minicbor_2);
