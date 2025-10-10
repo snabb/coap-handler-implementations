@@ -22,7 +22,7 @@ pub struct Empty;
 /// serde.
 ///
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
-/// [TypeHandler::new].
+/// [`TypeHandler::new_*`][TypeHandler].
 pub trait TypeRenderable {
     /// Output type of the [get()][Self::get()] method, serialized into the response payload.
     type Get;
