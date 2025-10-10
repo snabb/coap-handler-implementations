@@ -79,10 +79,10 @@ where
     response
         .add_option(optconvert(option::ETAG), &[0, 0, 0, 0, 0, 0, 0, 0])
         .unwrap();
-    if let Some(cf) = cf {
-        if let Ok(cfopt) = option::CONTENT_FORMAT.try_into() {
-            response.add_option_uint(cfopt, cf).unwrap();
-        }
+    if let Some(cf) = cf
+        && let Ok(cfopt) = option::CONTENT_FORMAT.try_into()
+    {
+        response.add_option_uint(cfopt, cf).unwrap();
     }
     response
         .add_option_uint(optconvert(option::BLOCK2), block2.to_option_value(false))
