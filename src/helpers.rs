@@ -34,7 +34,7 @@ pub fn block2_write<F, R>(
     f: F,
 ) -> R
 where
-    F: FnOnce(&mut windowed_infinity::TeeForCrc<'_, '_, u64>) -> R,
+    F: FnOnce(&mut crate::embedded_io::EmbeddedIoOrFmtWrite<'_>) -> R,
 {
     block2_write_with_cf(block2, response, f, None)
 }
@@ -68,7 +68,7 @@ pub(crate) fn block2_write_with_cf<F, R>(
     cf: Option<u16>,
 ) -> R
 where
-    F: FnOnce(&mut windowed_infinity::TeeForCrc<'_, '_, u64>) -> R,
+    F: FnOnce(&mut crate::embedded_io::EmbeddedIoOrFmtWrite<'_>) -> R,
 {
     let estimated_option_size = 25; // 9 bytes ETag, up to 5 bytes Block2, up to 5 bytes Size2, 1 byte payload marker
     let payload_budget = response.available_space() - estimated_option_size;
@@ -79,10 +79,10 @@ where
     response
         .add_option(optconvert(option::ETAG), &[0, 0, 0, 0, 0, 0, 0, 0])
         .unwrap();
-    if let Some(cf) = cf {
-        if let Ok(cfopt) = option::CONTENT_FORMAT.try_into() {
-            response.add_option_uint(cfopt, cf).unwrap();
-        }
+    if let Some(cf) = cf
+        && let Ok(cfopt) = option::CONTENT_FORMAT.try_into()
+    {
+        response.add_option_uint(cfopt, cf).unwrap();
     }
     response
         .add_option_uint(optconvert(option::BLOCK2), block2.to_option_value(false))
@@ -95,11 +95,15 @@ where
             -(block2.start() as isize),
         );
         let etag = crc::Crc::<u64>::new(&crc::CRC_64_ECMA_182);
-        let mut writer = writer.tee_crc64(&etag);
+        let etag = etag.digest();
+        let mut writer = crate::embedded_io::EmbeddedIoOrFmtWrite(tee_embedded_io::Tee::new(
+            writer,
+            extra_embedded_io_adapters::WritableCrc(etag),
+        ));
 
         let ret = f(&mut writer);
 
-        let (writer, etag) = writer.into_windowed_and_crc();
+        let (writer, extra_embedded_io_adapters::WritableCrc(etag)) = writer.0.into_parts();
         let written = writer.written();
 
         (

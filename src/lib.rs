@@ -4,7 +4,7 @@
 //! They range from the generic "4.04
 //! Not Found" responder up to a handler that creates a [write] formatter for GET-only resources,
 //! and even provides [block-wise transfer] that.
-//! The [TypeHandler] enables the easy creation of [serde_cbor] based
+//! The [TypeHandler] enables the easy creation of
 //! resource implementations with GET, PUT and POST support in CBOR format.
 //! The `HandlerBuilder` implements crude static path based routing
 //! that may suffice for some applications, and is also useful to get started quickly.
@@ -12,7 +12,6 @@
 //! [coap-handler]: https://crates.io/crates/coap-handler
 //! [write]: https://doc.rust-lang.org/core/fmt/trait.Write.html
 //! [block-wise transfer]: https://tools.ietf.org/html/rfc7959
-//! [serde_cbor]: https://crates.io/crates/serde_cbor
 //!
 //! History
 //! -------
@@ -38,13 +37,15 @@
 //! check) that prior wrappers took care of them.
 #![doc = document_features::document_features!()]
 #![no_std]
-#![cfg_attr(feature = "_nightly_docs", feature(doc_auto_cfg))]
+#![cfg_attr(feature = "_nightly_docs", feature(doc_cfg))]
 #![cfg_attr(
     feature = "_nontrivial_option_processing",
     feature(impl_trait_in_assoc_type)
 )]
 
 use coap_message::{MinimalWritableMessage, MutableWritableMessage, ReadableMessage};
+
+mod embedded_io;
 
 pub mod helpers;
 pub mod wkc;

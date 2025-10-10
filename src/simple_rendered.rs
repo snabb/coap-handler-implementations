@@ -20,7 +20,7 @@ pub struct SimpleRenderableData(Block2RequestData);
 /// Anything that implements it (which includes plain &str, for example) can be packed into a
 /// [SimpleRendered] to form a Handler.
 pub trait SimpleRenderable {
-    fn render<W: embedded_io::blocking::Write + core::fmt::Write>(&mut self, writer: &mut W);
+    fn render<W: embedded_io::Write + core::fmt::Write>(&mut self, writer: &mut W);
 
     /// If something is returned, GETs with differing Accept options will be rejecected, and the
     /// value will be set in responses.
@@ -155,7 +155,7 @@ pub struct TypedStaticRenderable<'a> {
 }
 
 impl SimpleRenderable for TypedStaticRenderable<'_> {
-    fn render<W: embedded_io::blocking::Write + core::fmt::Write>(&mut self, writer: &mut W) {
+    fn render<W: embedded_io::Write + core::fmt::Write>(&mut self, writer: &mut W) {
         writer.write_all(self.data).unwrap();
     }
 
