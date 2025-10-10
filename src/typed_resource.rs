@@ -19,7 +19,7 @@ use core::marker::PhantomData;
 pub struct Empty;
 
 /// A simple Handler trait that supports GET, POST and/or PUT on a data structure that supports
-/// serde.
+/// different serializations.
 ///
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
 /// [`TypeHandler::new_*`][TypeHandler].
@@ -54,7 +54,7 @@ mod sealed {
         const CF: Option<u16>;
     }
 
-    pub struct MiniCBORSerialization1;
+    pub struct MiniCBORSerialization2;
 }
 use sealed::*;
 
@@ -160,7 +160,7 @@ impl<'b, C> minicbor_2::decode::Decode<'b, C> for Empty {
     }
 }
 
-impl<H> Handler for TypeHandler<H, MiniCBORSerialization1>
+impl<H> Handler for TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
     H::Get: for<'de> minicbor_2::Encode<()>,
@@ -237,7 +237,7 @@ where
                             |win| {
                                 minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win))
                             },
-                            MiniCBORSerialization1::CF,
+                            MiniCBORSerialization2::CF,
                         ) {
                             Ok(()) => (),
                             Err(_) => {
@@ -253,18 +253,18 @@ where
     }
 }
 
-impl TypeSerializer for MiniCBORSerialization1 {
+impl TypeSerializer for MiniCBORSerialization2 {
     const CF: Option<u16> = coap_numbers::content_format::from_str("application/cbor");
 }
 
-impl<H> TypeHandler<H, MiniCBORSerialization1>
+impl<H> TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
     H::Get: for<'de> minicbor_2::Encode<()>,
     H::Post: for<'de> minicbor_2::Decode<'de, ()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
 {
-    /// Wrap a handler through minicbor 0.26
+    /// Wrap a handler through minicbor 2.x
     pub fn new_minicbor_2(handler: H) -> Self {
         TypeHandler {
             handler,
