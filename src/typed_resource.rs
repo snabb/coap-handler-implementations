@@ -7,6 +7,7 @@ use crate::helpers::block2_write_with_cf;
 use coap_handler::Handler;
 use coap_message::{
     Code as _, MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
+    error::RenderableOnMinimal as _,
 };
 use coap_message_utils::{OptionsExt, option_value::Block2RequestData};
 use coap_numbers::{code, option};
@@ -15,35 +16,63 @@ use core::marker::PhantomData;
 /// A type that (for minicbor typed handlers) represents an empty payload.
 ///
 /// This is particularly practical for resources that have a GET and PUT handler that act on
-/// serialized data, but where the POST handler just takes an empty resource.
+/// serialized data, but where the POST handler just takes or return an empty payload.
 pub struct Empty;
 
-/// A simple Handler trait that supports GET, POST and/or PUT on a data structure that supports
+/// A simple Handler trait that supports various CoAP methods on a data structure that supports
 /// different serializations.
 ///
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
 /// [`TypeHandler::new_*`][TypeHandler].
+///
+/// For different methods, the functions get called at different times in the request/response
+/// handling sequence: A GET's method is called when the response is prepared, whereas a PUT's
+/// method is called when the request is prepared. This ensures that for CoAP server
+/// implementations that delay rendering (e.g. as part of retransmission handling), no large data
+/// needs to be kept for long. The methods with both input and output data (POST, FETCH) are called
+/// according to their most expected usage pattern: [`Self::fetch()`] is called at response time
+/// (because the request payload is typically a small filter expression that limits the output to
+/// something that fits within a CoAP response but may still be large), whereas [`Self::patch()`]
+/// is called immediately (because it is frequently used with empty outputs).
 pub trait TypeRenderable {
     /// Output type of the [get()][Self::get()] method, serialized into the response payload.
     type Get;
     /// Input type of the [post()][Self::post()] method, deserialized from the request payload.
+    type PostIn;
+    /// Ouptut type of the [post()][Self::post()] method, serialized into the response payload.
     ///
-    /// Note that with TypedRenderable in this version, the response is always empty.
-    type Post;
+    /// Note that this is a size sensitive type: On CoAP servers that need to retain state between
+    /// processing a request and sending a response, this type goes into that state.
+    type PostOut;
     /// Input type of the [put()][Self::put()] method, deserialized from the request payload.
     type Put;
+    /// Input type of the [fetch()][Self::fetch()] method, deserialized from the request payload.
+    ///
+    /// Note that this is a size sensitive type: On CoAP servers that need to retain state between
+    /// processing a request and sending a response, this type goes into that state.
+    type FetchIn;
+    /// Ouptut type of the [fetch()][Self::fetch()] method, serialized into the response payload.
+    type FetchOut;
+    /// Input type of the [ipatch()][Self::ipatch()] method, deserialized from the request payload.
+    type IPatch;
 
-    fn get(&mut self) -> Result<Self::Get, u8> {
-        Err(code::METHOD_NOT_ALLOWED)
+    fn get(&mut self) -> Result<Self::Get, Error> {
+        Err(Error::method_not_allowed())
     }
-    fn post(&mut self, _representation: &Self::Post) -> u8 {
-        code::METHOD_NOT_ALLOWED
+    fn post(&mut self, _representation: &Self::PostIn) -> Result<Self::PostOut, Error> {
+        Err(Error::method_not_allowed())
     }
-    fn put(&mut self, _representation: &Self::Put) -> u8 {
-        code::METHOD_NOT_ALLOWED
+    fn put(&mut self, _representation: &Self::Put) -> Result<(), Error> {
+        Err(Error::method_not_allowed())
     }
-    fn delete(&mut self) -> u8 {
-        code::METHOD_NOT_ALLOWED
+    fn delete(&mut self) -> Result<(), Error> {
+        Err(Error::method_not_allowed())
+    }
+    fn fetch(&mut self, _representation: &Self::FetchIn) -> Result<Self::FetchOut, Error> {
+        Err(Error::method_not_allowed())
+    }
+    fn ipatch(&mut self, _representation: &Self::IPatch) -> Result<(), Error> {
+        Err(Error::method_not_allowed())
     }
 }
 
@@ -107,11 +136,45 @@ where
         Ok(block2.unwrap_or_default())
     }
 
+    fn check_fetch_options(request: &impl ReadableMessage) -> Result<Block2RequestData, Error> {
+        // FIXME deduplicage with check_get_options, which is almost identical
+
+        let mut block2 = None;
+
+        request
+            .options()
+            .take_block2(&mut block2)
+            .filter(|o| {
+                if o.number() == option::CONTENT_FORMAT {
+                    // BIG FIXME: *which* format(s) should we accept? POST compares for our CF but
+                    // that's not really true.
+                    false
+                } else if o.number() == option::ACCEPT {
+                    if let Some(cf) = S::CF {
+                        // If they differ, we'll keep the option for later failing
+                        o.value_uint() != Some(cf)
+                    } else {
+                        // We don't know any content format, so we keep the option in the iterator
+                        // to fail later
+                        true
+                    }
+                } else {
+                    true
+                }
+            })
+            .ignore_elective_others()?;
+
+        Ok(block2.unwrap_or_default())
+    }
+
     fn check_delete_options(request: &impl ReadableMessage) -> Result<(), Error> {
         request.options().ignore_elective_others()
     }
 
     fn check_postput_options(request: &impl ReadableMessage) -> Result<(), Error> {
+        // BIG FIXME: Splot out POST handling b/c now that can also have accept and that needs
+        // checking
+
         let mut cf = Ok(());
 
         request
@@ -132,13 +195,23 @@ where
 }
 
 /// Data carried around between a request and its response for [TypeHandler]s
-pub struct TypeRequestData(TypeRequestDataE);
+///
+/// This carries input data from FETCH and output data from POST, under the assumption that FETCH
+/// generally have small input representations and POST have large output representations; see
+/// [`TypeRenderable`] documentation.
+pub struct TypeRequestData<FetchIn, PostOut>(TypeRequestDataE<FetchIn, PostOut>);
 
-enum TypeRequestDataE {
+enum TypeRequestDataE<FetchIn, PostOut> {
     Get(Block2RequestData), // GET to be processed later, but all request opions were in order
-    Done(u8), // All done, just a response to emit -- if POST/PUT has been processed, or GET had a bad accept/option
+    Fetch(Block2RequestData, FetchIn),
+    Post(PostOut),
+    // FIXME: Those could really go together with the Error in a single variant, but then it's also
+    // convenient for Error to be really only errors -- make Error a type alias for Response<const
+    // bool CanBeOk, const bool CanBeError>? And may we just abuse ExtractRequestError to also
+    // carry it without any other ill-effect?
+    DoneCode(u8), // All done, just a response to emit -- if POST/PUT has been processed, or GET had a bad accept/option
 }
-use self::TypeRequestDataE::{Done, Get};
+use self::TypeRequestDataE::{DoneCode, Fetch, Get, Post};
 
 // FIXME for all the below: deduplicate (but not sure how, without HKTs) -- and some alterations
 // have accumulated
@@ -164,10 +237,14 @@ impl<H> Handler for TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
     H::Get: for<'de> minicbor_2::Encode<()>,
-    H::Post: for<'de> minicbor_2::Decode<'de, ()>,
+    H::PostIn: for<'de> minicbor_2::Decode<'de, ()>,
+    H::PostOut: for<'de> minicbor_2::Encode<()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
+    H::FetchIn: for<'de> minicbor_2::Decode<'de, ()>,
+    H::FetchOut: for<'de> minicbor_2::Encode<()>,
+    H::IPatch: for<'de> minicbor_2::Decode<'de, ()>,
 {
-    type RequestData = TypeRequestData;
+    type RequestData = TypeRequestData<H::FetchIn, H::PostOut>;
     type ExtractRequestError = Error;
     type BuildResponseError<M: MinimalWritableMessage> = M::UnionError;
 
@@ -178,7 +255,8 @@ where
         Ok(TypeRequestData(match request.code().into() {
             code::DELETE => {
                 Self::check_delete_options(request)?;
-                Done(self.handler.delete())
+                self.handler.delete()?;
+                DoneCode(code::DELETED)
             }
             code::GET => Get(Self::check_get_options(request)?),
             code::POST => {
@@ -186,14 +264,14 @@ where
                 Self::check_postput_options(request)?;
 
                 let payload = request.payload();
-                match (payload, H::Post::nil()) {
-                    (b"", Some(nil)) => Done(self.handler.post(&nil)),
+                match (payload, H::PostIn::nil()) {
+                    (b"", Some(nil)) => Post(self.handler.post(&nil)?),
                     (payload, _) => {
-                        let parsed: H::Post =
+                        let parsed: H::PostIn =
                             minicbor_2::decode(payload).map_err(|deserialize_error| {
                                 deserialize_error.into_general_error(payload.len())
                             })?;
-                        Done(self.handler.post(&parsed))
+                        Post(self.handler.post(&parsed)?)
                     }
                 }
             }
@@ -205,16 +283,32 @@ where
                 let parsed: H::Put = minicbor_2::decode(payload).map_err(|deserialize_error| {
                     deserialize_error.into_general_error(payload.len())
                 })?;
-                Done(self.handler.put(&parsed))
+                self.handler.put(&parsed)?;
+                DoneCode(code::CHANGED)
             }
-            _ => Done(code::METHOD_NOT_ALLOWED),
+            code::FETCH => {
+                let block_options = Self::check_fetch_options(request)?;
+
+                let payload = request.payload();
+
+                let parsed: H::FetchIn =
+                    minicbor_2::decode(payload).map_err(|deserialize_error| {
+                        deserialize_error.into_general_error(payload.len())
+                    })?;
+                Fetch(block_options, parsed)
+            }
+            // BIG FIXME: This is missing code for IPATCH completely, and POST is not really up to
+            // date any more
+            _ => return Err(Error::method_not_allowed()),
         }))
     }
 
     fn estimate_length(&mut self, request: &Self::RequestData) -> usize {
         match &request.0 {
-            Done(_) => 4,
+            DoneCode(_) => 4,
             Get(block) => (block.size() + 25).into(), // FIXME: hard-coded copied over from block2_write_with_cf's estimated overhead
+            // BIG FIXME: huh?
+            _ => 1024,
         }
     }
 
@@ -224,11 +318,11 @@ where
         request: Self::RequestData,
     ) -> Result<(), Self::BuildResponseError<M>> {
         match request.0 {
-            Done(r) => response.set_code(M::Code::new(r)?),
+            DoneCode(c) => response.set_code(M::Code::new(c)?),
             Get(block2) => {
                 let repr = self.handler.get();
                 match repr {
-                    Err(e) => response.set_code(M::Code::new(e)?),
+                    Err(e) => e.render(response)?,
                     Ok(repr) => {
                         response.set_code(M::Code::new(code::CONTENT)?);
                         match block2_write_with_cf(
@@ -248,12 +342,39 @@ where
                     }
                 }
             }
+            Fetch(block2, fetch) => {
+                let repr = self.handler.fetch(&fetch);
+                match repr {
+                    Err(e) => e.render(response)?,
+                    Ok(repr) => {
+                        response.set_code(M::Code::new(code::CONTENT)?);
+                        match block2_write_with_cf(
+                            block2,
+                            response,
+                            |win| {
+                                minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win))
+                            },
+                            MiniCBORSerialization2::CF,
+                        ) {
+                            Ok(()) => (),
+                            Err(_) => {
+                                // FIXME: Rewind all the written options
+                                response.set_code(M::Code::new(code::INTERNAL_SERVER_ERROR)?);
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {
+                todo!("BIG FIXME");
+            }
         };
         Ok(())
     }
 }
 
 impl TypeSerializer for MiniCBORSerialization2 {
+    // FIXME: Allow differentiation by methods
     const CF: Option<u16> = coap_numbers::content_format::from_str("application/cbor");
 }
 
@@ -261,8 +382,12 @@ impl<H> TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
     H::Get: for<'de> minicbor_2::Encode<()>,
-    H::Post: for<'de> minicbor_2::Decode<'de, ()>,
+    H::PostIn: for<'de> minicbor_2::Decode<'de, ()>,
+    H::PostOut: for<'de> minicbor_2::Encode<()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
+    H::FetchIn: for<'de> minicbor_2::Decode<'de, ()>,
+    H::FetchOut: for<'de> minicbor_2::Encode<()>,
+    H::IPatch: for<'de> minicbor_2::Decode<'de, ()>,
 {
     /// Wrap a handler through minicbor 2.x
     pub fn new_minicbor_2(handler: H) -> Self {
