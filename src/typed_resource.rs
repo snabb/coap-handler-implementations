@@ -236,12 +236,12 @@ impl<'b, C> minicbor_2::decode::Decode<'b, C> for Empty {
 impl<H> Handler for TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
-    H::Get: for<'de> minicbor_2::Encode<()>,
+    H::Get: minicbor_2::Encode<()>,
     H::PostIn: for<'de> minicbor_2::Decode<'de, ()>,
-    H::PostOut: for<'de> minicbor_2::Encode<()> + minicbor_2::CborLen<()>,
+    H::PostOut: minicbor_2::Encode<()> + minicbor_2::CborLen<()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
     H::FetchIn: for<'de> minicbor_2::Decode<'de, ()>,
-    H::FetchOut: for<'de> minicbor_2::Encode<()>,
+    H::FetchOut: minicbor_2::Encode<()>,
     H::IPatch: for<'de> minicbor_2::Decode<'de, ()>,
 {
     type RequestData = TypeRequestData<H::FetchIn, H::PostOut>;
@@ -379,12 +379,12 @@ impl TypeSerializer for MiniCBORSerialization2 {
 impl<H> TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
-    H::Get: for<'de> minicbor_2::Encode<()>,
+    H::Get: minicbor_2::Encode<()>,
     H::PostIn: for<'de> minicbor_2::Decode<'de, ()>,
-    H::PostOut: for<'de> minicbor_2::Encode<()>,
+    H::PostOut: minicbor_2::Encode<()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
     H::FetchIn: for<'de> minicbor_2::Decode<'de, ()>,
-    H::FetchOut: for<'de> minicbor_2::Encode<()>,
+    H::FetchOut: minicbor_2::Encode<()>,
     H::IPatch: for<'de> minicbor_2::Decode<'de, ()>,
 {
     /// Wrap a handler through minicbor 2.x
