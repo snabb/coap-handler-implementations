@@ -122,6 +122,11 @@ pub trait IPatchRenderable {
 /// their users have aliases.
 mod sealed {
     pub trait TypeSerializer {
+        // BIG FIXME: This conflates
+        // * This is the same across all methods, both for input and for output
+        // * This is guided by the serializer, when really it may need to be guided by the type
+        //   (even though minicbor may easily (de)serialize application/cbor or
+        //   application/foo+cbor).
         const CF: Option<u16>;
     }
 
@@ -153,14 +158,19 @@ where
     H: TypeRenderable,
     S: TypeSerializer,
 {
-    fn check_get_options(request: &impl ReadableMessage) -> Result<Block2RequestData, Error> {
+    /// Checks whether any Accept and Content-Format options are really S::CF, and extracts the
+    /// Block2 option.
+    ///
+    /// This is not 100% sharp because it'll let Accept and Content-Format slip through on Delete
+    /// as well, but there's little harm in that.
+    fn extract_options(request: &impl ReadableMessage) -> Result<Option<Block2RequestData>, Error> {
         let mut block2 = None;
 
         request
             .options()
             .take_block2(&mut block2)
             .filter(|o| {
-                if o.number() == option::ACCEPT {
+                if o.number() == option::CONTENT_FORMAT || o.number() == option::ACCEPT {
                     if let Some(cf) = S::CF {
                         // If they differ, we'll keep the option for later failing
                         o.value_uint() != Some(cf)
@@ -175,64 +185,7 @@ where
             })
             .ignore_elective_others()?;
 
-        Ok(block2.unwrap_or_default())
-    }
-
-    fn check_fetch_options(request: &impl ReadableMessage) -> Result<Block2RequestData, Error> {
-        // FIXME deduplicage with check_get_options, which is almost identical
-
-        let mut block2 = None;
-
-        request
-            .options()
-            .take_block2(&mut block2)
-            .filter(|o| {
-                if o.number() == option::CONTENT_FORMAT {
-                    // BIG FIXME: *which* format(s) should we accept? POST compares for our CF but
-                    // that's not really true.
-                    false
-                } else if o.number() == option::ACCEPT {
-                    if let Some(cf) = S::CF {
-                        // If they differ, we'll keep the option for later failing
-                        o.value_uint() != Some(cf)
-                    } else {
-                        // We don't know any content format, so we keep the option in the iterator
-                        // to fail later
-                        true
-                    }
-                } else {
-                    true
-                }
-            })
-            .ignore_elective_others()?;
-
-        Ok(block2.unwrap_or_default())
-    }
-
-    fn check_delete_options(request: &impl ReadableMessage) -> Result<(), Error> {
-        request.options().ignore_elective_others()
-    }
-
-    fn check_postput_options(request: &impl ReadableMessage) -> Result<(), Error> {
-        // BIG FIXME: Splot out POST handling b/c now that can also have accept and that needs
-        // checking
-
-        let mut cf = Ok(());
-
-        request
-            .options()
-            .filter(|o| {
-                if o.number() == option::CONTENT_FORMAT
-                    && (S::CF.is_none() || o.value_uint() != S::CF)
-                {
-                    cf = Err(Error::bad_option(option::CONTENT_FORMAT));
-                }
-                // It's not a critical option so we don't really have to filter it out
-                true
-            })
-            .ignore_elective_others()?;
-
-        cf
+        Ok(block2)
     }
 }
 
@@ -280,7 +233,7 @@ where
     H: TypeRenderable,
     H::Get: for<'de> minicbor_2::Encode<()>,
     H::PostIn: for<'de> minicbor_2::Decode<'de, ()>,
-    H::PostOut: for<'de> minicbor_2::Encode<()>,
+    H::PostOut: for<'de> minicbor_2::Encode<()> + minicbor_2::CborLen<()>,
     H::Put: for<'de> minicbor_2::Decode<'de, ()>,
     H::FetchIn: for<'de> minicbor_2::Decode<'de, ()>,
     H::FetchOut: for<'de> minicbor_2::Encode<()>,
@@ -294,16 +247,24 @@ where
         &mut self,
         request: &M,
     ) -> Result<Self::RequestData, Error> {
+        let block2 = Self::extract_options(request)?;
+
+        if matches!(
+            request.code().into(),
+            code::DELETE | code::POST | code::PUT | code::IPATCH
+        ) && block2.is_some()
+        {
+            return Err(Error::bad_option(coap_numbers::option::BLOCK2));
+        }
+
         Ok(TypeRequestData(match request.code().into() {
             code::DELETE => {
-                Self::check_delete_options(request)?;
                 self.handler.delete()?;
                 DoneCode(code::DELETED)
             }
-            code::GET => Get(Self::check_get_options(request)?),
+            code::GET => Get(block2.unwrap_or_default()),
             code::POST => {
                 use minicbor_2::decode::Decode;
-                Self::check_postput_options(request)?;
 
                 let payload = request.payload();
                 match (payload, H::PostIn::nil()) {
@@ -318,8 +279,6 @@ where
                 }
             }
             code::PUT => {
-                Self::check_postput_options(request)?;
-
                 let payload = request.payload();
 
                 let parsed: H::Put = minicbor_2::decode(payload).map_err(|deserialize_error| {
@@ -329,18 +288,24 @@ where
                 DoneCode(code::CHANGED)
             }
             code::FETCH => {
-                let block_options = Self::check_fetch_options(request)?;
-
                 let payload = request.payload();
 
                 let parsed: H::FetchIn =
                     minicbor_2::decode(payload).map_err(|deserialize_error| {
                         deserialize_error.into_general_error(payload.len())
                     })?;
-                Fetch(block_options, parsed)
+                Fetch(block2.unwrap_or_default(), parsed)
             }
-            // BIG FIXME: This is missing code for IPATCH completely, and POST is not really up to
-            // date any more
+            code::IPATCH => {
+                let payload = request.payload();
+
+                let parsed: H::IPatch =
+                    minicbor_2::decode(payload).map_err(|deserialize_error| {
+                        deserialize_error.into_general_error(payload.len())
+                    })?;
+                self.handler.ipatch(&parsed)?;
+                DoneCode(code::CHANGED)
+            }
             _ => return Err(Error::method_not_allowed()),
         }))
     }
@@ -407,8 +372,14 @@ where
                     }
                 }
             }
-            _ => {
-                todo!("BIG FIXME");
+            Post(post_out) => {
+                response.set_code(M::Code::new(code::CHANGED)?);
+                // We're lacking the context for reassembly, so we have pack the response in one
+                // packet or bail.
+                let len = minicbor_2::len(&post_out);
+                let payload = response.payload_mut_with_len(len)?;
+                let mut encoder = minicbor_2::Encoder::new(payload);
+                encoder.encode(&post_out).unwrap();
             }
         };
         Ok(())
