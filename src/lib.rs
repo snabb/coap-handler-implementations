@@ -106,4 +106,7 @@ pub use simple_rendered::{
 };
 
 mod typed_resource;
-pub use typed_resource::{Empty, TypeHandler, TypeRenderable, TypeRequestData};
+pub use typed_resource::{
+    DeleteRenderable, Empty, FetchRenderable, GetRenderable, IPatchRenderable, PostRenderable,
+    PutRenderable, TypeHandler, TypeRenderable, TypeRequestData, generated::*,
+};

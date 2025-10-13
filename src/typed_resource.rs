@@ -13,6 +13,9 @@ use coap_message_utils::{OptionsExt, option_value::Block2RequestData};
 use coap_numbers::{code, option};
 use core::marker::PhantomData;
 
+pub(crate) mod fillers;
+pub(crate) mod generated;
+
 /// A type that (for minicbor typed handlers) represents an empty payload.
 ///
 /// This is particularly practical for resources that have a GET and PUT handler that act on
@@ -34,9 +37,36 @@ pub struct Empty;
 /// (because the request payload is typically a small filter expression that limits the output to
 /// something that fits within a CoAP response but may still be large), whereas [`Self::patch()`]
 /// is called immediately (because it is frequently used with empty outputs).
-pub trait TypeRenderable {
+///
+/// This is a composite trait of many per-method traits because all those traits come with their
+/// own associated types (and maybe constants), and as long as neither of those can be provided
+/// like methods can be (i.e., added later extensibly, allowing for defaults), those are more
+/// easily handled by composition.
+///
+/// This trait is sealed to enable the addition of new method handlers. For any set of traits a
+/// implemented, use the corresponding constructor function, eg. [`with_get_put_fetch()`], which
+/// marks all other methods as unimplemented.
+pub trait TypeRenderable:
+    GetRenderable
+    + PostRenderable
+    + PutRenderable
+    + DeleteRenderable
+    + FetchRenderable
+    + IPatchRenderable
+    + sealed::ExtensibleRenderable
+{
+}
+
+pub trait GetRenderable {
     /// Output type of the [get()][Self::get()] method, serialized into the response payload.
     type Get;
+
+    fn get(&mut self) -> Result<Self::Get, Error> {
+        Err(Error::method_not_allowed())
+    }
+}
+
+pub trait PostRenderable {
     /// Input type of the [post()][Self::post()] method, deserialized from the request payload.
     type PostIn;
     /// Ouptut type of the [post()][Self::post()] method, serialized into the response payload.
@@ -44,8 +74,29 @@ pub trait TypeRenderable {
     /// Note that this is a size sensitive type: On CoAP servers that need to retain state between
     /// processing a request and sending a response, this type goes into that state.
     type PostOut;
+
+    fn post(&mut self, _representation: &Self::PostIn) -> Result<Self::PostOut, Error> {
+        Err(Error::method_not_allowed())
+    }
+}
+
+pub trait PutRenderable {
     /// Input type of the [put()][Self::put()] method, deserialized from the request payload.
     type Put;
+    fn put(&mut self, _representation: &Self::Put) -> Result<(), Error> {
+        Err(Error::method_not_allowed())
+    }
+}
+
+// Note that while this could be a plain provided method (it needs no associated items that can't
+// have a default), that'd cause a bit of inconsistency in the user experience.
+pub trait DeleteRenderable {
+    fn delete(&mut self) -> Result<(), Error> {
+        Err(Error::method_not_allowed())
+    }
+}
+
+pub trait FetchRenderable {
     /// Input type of the [fetch()][Self::fetch()] method, deserialized from the request payload.
     ///
     /// Note that this is a size sensitive type: On CoAP servers that need to retain state between
@@ -53,24 +104,16 @@ pub trait TypeRenderable {
     type FetchIn;
     /// Ouptut type of the [fetch()][Self::fetch()] method, serialized into the response payload.
     type FetchOut;
-    /// Input type of the [ipatch()][Self::ipatch()] method, deserialized from the request payload.
-    type IPatch;
 
-    fn get(&mut self) -> Result<Self::Get, Error> {
-        Err(Error::method_not_allowed())
-    }
-    fn post(&mut self, _representation: &Self::PostIn) -> Result<Self::PostOut, Error> {
-        Err(Error::method_not_allowed())
-    }
-    fn put(&mut self, _representation: &Self::Put) -> Result<(), Error> {
-        Err(Error::method_not_allowed())
-    }
-    fn delete(&mut self) -> Result<(), Error> {
-        Err(Error::method_not_allowed())
-    }
     fn fetch(&mut self, _representation: &Self::FetchIn) -> Result<Self::FetchOut, Error> {
         Err(Error::method_not_allowed())
     }
+}
+
+pub trait IPatchRenderable {
+    /// Input type of the [ipatch()][Self::ipatch()] method, deserialized from the request payload.
+    type IPatch;
+
     fn ipatch(&mut self, _representation: &Self::IPatch) -> Result<(), Error> {
         Err(Error::method_not_allowed())
     }
@@ -79,6 +122,8 @@ pub trait TypeRenderable {
 /// Keeping them hidden to stay flexible; they don't need to be named for their'e either default or
 /// their users have aliases.
 mod sealed {
+    pub trait ExtensibleRenderable {}
+
     pub trait TypeSerializer {
         const CF: Option<u16>;
     }
