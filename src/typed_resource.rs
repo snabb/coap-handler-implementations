@@ -21,30 +21,30 @@ pub(crate) mod generated;
 /// serialized data, but where the POST handler just takes or return an empty payload.
 pub struct Empty;
 
-/// A simple Handler trait that supports various CoAP methods on a data structure that supports
-/// different serializations.
+/// A Handler trait that supports various CoAP methods on a data structure that can be serialized,
+/// eg. in CBOR.
 ///
 /// A TypeRenderable implementation can be turned into a [Handler] by wrapping it in
 /// [`TypeHandler::new_*`][TypeHandler].
-///
-/// For different methods, the functions get called at different times in the request/response
-/// handling sequence: A GET's method is called when the response is prepared, whereas a PUT's
-/// method is called when the request is prepared. This ensures that for CoAP server
-/// implementations that delay rendering (e.g. as part of retransmission handling), no large data
-/// needs to be kept for long. The methods with both input and output data (POST, FETCH) are called
-/// according to their most expected usage pattern: [`Self::fetch()`] is called at response time
-/// (because the request payload is typically a small filter expression that limits the output to
-/// something that fits within a CoAP response but may still be large), whereas [`Self::patch()`]
-/// is called immediately (because it is frequently used with empty outputs).
 ///
 /// This is a composite trait of many per-method traits because all those traits come with their
 /// own associated types (and maybe constants), and as long as neither of those can be provided
 /// like methods can be (i.e., added later extensibly, allowing for defaults), those are more
 /// easily handled by composition.
 ///
-/// This trait is not sealed, but is likely to gain new requirements in what would otherwise not be
-/// a breaking update. For any set of traits imlemented, use the corresponding constructor
-/// function, eg. [`with_get_put_fetch()`], which marks all other methods as unimplemented.
+/// Unless you can keep track of changes to the list of trait dependencies, use the
+/// [`with_get_put_fetch()`][super::with_get_put_fetch]-style wrappers around instances, which mark
+/// all other methods as unimplemented.
+///
+/// For different methods, the functions get called at different times in the request/response
+/// handling sequence: A GET's method is called when the response is prepared, whereas a PUT's
+/// method is called when the request is prepared. This ensures that for CoAP server
+/// implementations that delay rendering (e.g. as part of retransmission handling), no large data
+/// needs to be kept for long. The methods with both input and output data (POST, FETCH) are called
+/// according to their most expected usage pattern: [`FetchRenderable::fetch()`] is called at response time
+/// (because the request payload is typically a small filter expression that limits the output to
+/// something that fits within a CoAP response but may still be large), whereas [`IPatchRenderable::ipatch()`]
+/// is called immediately (because it is frequently used with empty outputs).
 pub trait TypeRenderable:
     GetRenderable
     + PostRenderable
@@ -55,6 +55,7 @@ pub trait TypeRenderable:
 {
 }
 
+/// Subset of [`TypeRenderable`] that handles the GET method.
 pub trait GetRenderable {
     /// Output type of the [get()][Self::get()] method, serialized into the response payload.
     type Get;
@@ -64,6 +65,7 @@ pub trait GetRenderable {
     }
 }
 
+/// Subset of [`TypeRenderable`] that handles the POST method.
 pub trait PostRenderable {
     /// Input type of the [post()][Self::post()] method, deserialized from the request payload.
     type PostIn;
@@ -78,6 +80,7 @@ pub trait PostRenderable {
     }
 }
 
+/// Subset of [`TypeRenderable`] that handles the PUT method.
 pub trait PutRenderable {
     /// Input type of the [put()][Self::put()] method, deserialized from the request payload.
     type Put;
@@ -86,6 +89,7 @@ pub trait PutRenderable {
     }
 }
 
+/// Subset of [`TypeRenderable`] that handles the DELETE method.
 // Note that while this could be a plain provided method (it needs no associated items that can't
 // have a default), that'd cause a bit of inconsistency in the user experience.
 pub trait DeleteRenderable {
@@ -94,6 +98,7 @@ pub trait DeleteRenderable {
     }
 }
 
+/// Subset of [`TypeRenderable`] that handles the FETCH method.
 pub trait FetchRenderable {
     /// Input type of the [fetch()][Self::fetch()] method, deserialized from the request payload.
     ///
@@ -108,6 +113,7 @@ pub trait FetchRenderable {
     }
 }
 
+/// Subset of [`TypeRenderable`] that handles the IPATCH method.
 pub trait IPatchRenderable {
     /// Input type of the [ipatch()][Self::ipatch()] method, deserialized from the request payload.
     type IPatch;
@@ -141,7 +147,7 @@ use sealed::*;
 /// request router), the corresponding errors and block-wise GETs.
 ///
 /// More complex handlers (eg. implementing additional representations, or processing query
-/// aprameters into additional data available to the [TypeRenderable]) can be built by
+/// parameters into additional data available to the [TypeRenderable]) can be built by
 /// forwarding to this (where any critical but already processed options would need to be masked
 /// from the message's option) or taking inspiration from it.
 pub struct TypeHandler<H, S: TypeSerializer>
