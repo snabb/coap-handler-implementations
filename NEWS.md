@@ -1,3 +1,10 @@
+# Changes in 0.6.0
+
+* TypeRenderable split into GetRenderable/PostRenderable etc., implementing more methods
+* Support minicbor 2.0 for TypeRenderable
+* Update to windowed-infinity, dropping support for all older CBOR implementations
+* Update Rust version to 1.88
+
 # Changes in 0.5.4
 
 * Support minicbor 1.0 for TypeRenderable.
