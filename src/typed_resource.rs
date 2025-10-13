@@ -7,7 +7,6 @@ use crate::helpers::block2_write_with_cf;
 use coap_handler::Handler;
 use coap_message::{
     Code as _, MessageOption, MinimalWritableMessage, MutableWritableMessage, ReadableMessage,
-    error::RenderableOnMinimal as _,
 };
 use coap_message_utils::{OptionsExt, option_value::Block2RequestData};
 use coap_numbers::{code, option};
@@ -241,7 +240,7 @@ where
 {
     type RequestData = TypeRequestData<H::FetchIn, H::PostOut>;
     type ExtractRequestError = Error;
-    type BuildResponseError<M: MinimalWritableMessage> = M::UnionError;
+    type BuildResponseError<M: MinimalWritableMessage> = Error;
 
     fn extract_request_data<M: ReadableMessage>(
         &mut self,
@@ -314,8 +313,8 @@ where
         match &request.0 {
             DoneCode(_) => 4,
             Get(block) => (block.size() + 25).into(), // FIXME: hard-coded copied over from block2_write_with_cf's estimated overhead
-            // BIG FIXME: huh?
-            _ => 1024,
+            // FIXME: We could set something here, but practically, nothing looks into this anyway.
+            _ => 1200,
         }
     }
 
@@ -323,63 +322,43 @@ where
         &mut self,
         response: &mut M,
         request: Self::RequestData,
-    ) -> Result<(), Self::BuildResponseError<M>> {
+    ) -> Result<(), Error> {
         match request.0 {
-            DoneCode(c) => response.set_code(M::Code::new(c)?),
+            DoneCode(c) => response.set_code(M::Code::new(c).map_err(Error::from_unionerror)?),
             Get(block2) => {
-                let repr = self.handler.get();
-                match repr {
-                    Err(e) => e.render(response)?,
-                    Ok(repr) => {
-                        response.set_code(M::Code::new(code::CONTENT)?);
-                        match block2_write_with_cf(
-                            block2,
-                            response,
-                            |win| {
-                                minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win))
-                            },
-                            MiniCBORSerialization2::CF,
-                        ) {
-                            Ok(()) => (),
-                            Err(_) => {
-                                // FIXME: Rewind all the written options
-                                response.set_code(M::Code::new(code::INTERNAL_SERVER_ERROR)?);
-                            }
-                        }
-                    }
-                }
+                let repr = self.handler.get()?;
+                response.set_code(M::Code::new(code::CONTENT).map_err(Error::from_unionerror)?);
+                block2_write_with_cf(
+                    block2,
+                    response,
+                    |win| minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win)),
+                    MiniCBORSerialization2::CF,
+                )
+                .map_err(|_| Error::internal_server_error())?;
             }
             Fetch(block2, fetch) => {
-                let repr = self.handler.fetch(&fetch);
-                match repr {
-                    Err(e) => e.render(response)?,
-                    Ok(repr) => {
-                        response.set_code(M::Code::new(code::CONTENT)?);
-                        match block2_write_with_cf(
-                            block2,
-                            response,
-                            |win| {
-                                minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win))
-                            },
-                            MiniCBORSerialization2::CF,
-                        ) {
-                            Ok(()) => (),
-                            Err(_) => {
-                                // FIXME: Rewind all the written options
-                                response.set_code(M::Code::new(code::INTERNAL_SERVER_ERROR)?);
-                            }
-                        }
-                    }
-                }
+                let repr = self.handler.fetch(&fetch)?;
+                response.set_code(M::Code::new(code::CONTENT).map_err(Error::from_unionerror)?);
+                block2_write_with_cf(
+                    block2,
+                    response,
+                    |win| minicbor_2::encode(&repr, minicbor_adapters::WriteToEmbeddedIo(win)),
+                    MiniCBORSerialization2::CF,
+                )
+                .map_err(|_| Error::internal_server_error())?;
             }
             Post(post_out) => {
-                response.set_code(M::Code::new(code::CHANGED)?);
+                response.set_code(M::Code::new(code::CHANGED).map_err(Error::from_unionerror)?);
                 // We're lacking the context for reassembly, so we have pack the response in one
                 // packet or bail.
                 let len = minicbor_2::len(&post_out);
-                let payload = response.payload_mut_with_len(len)?;
+                let payload = response
+                    .payload_mut_with_len(len)
+                    .map_err(|_| Error::internal_server_error())?;
                 let mut encoder = minicbor_2::Encoder::new(payload);
-                encoder.encode(&post_out).unwrap();
+                encoder
+                    .encode(&post_out)
+                    .map_err(|_| Error::internal_server_error())?;
             }
         };
         Ok(())
