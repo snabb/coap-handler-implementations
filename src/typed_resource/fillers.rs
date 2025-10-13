@@ -124,7 +124,6 @@ macro_rules! delegate_ipatch {
 }
 
 pub struct FillGet<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillGet<T> {}
 
 impl<T> super::GetRenderable for FillGet<T> {
     type Get = ();
@@ -148,7 +147,6 @@ impl<
 }
 
 pub struct FillPost<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillPost<T> {}
 
 delegate_get!(FillPost);
 
@@ -174,7 +172,6 @@ impl<
 }
 
 pub struct FillPut<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillPut<T> {}
 
 delegate_get!(FillPut);
 delegate_post!(FillPut);
@@ -199,7 +196,6 @@ impl<
 }
 
 pub struct FillDelete<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillDelete<T> {}
 
 delegate_get!(FillDelete);
 delegate_post!(FillDelete);
@@ -222,7 +218,6 @@ impl<
 }
 
 pub struct FillFetch<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillFetch<T> {}
 
 delegate_get!(FillFetch);
 delegate_post!(FillFetch);
@@ -248,7 +243,6 @@ impl<
 }
 
 pub struct FillIPatch<T>(pub(crate) T);
-impl<T> super::sealed::ExtensibleRenderable for FillIPatch<T> {}
 
 delegate_get!(FillIPatch);
 delegate_post!(FillIPatch);

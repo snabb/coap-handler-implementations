@@ -43,9 +43,9 @@ pub struct Empty;
 /// like methods can be (i.e., added later extensibly, allowing for defaults), those are more
 /// easily handled by composition.
 ///
-/// This trait is sealed to enable the addition of new method handlers. For any set of traits a
-/// implemented, use the corresponding constructor function, eg. [`with_get_put_fetch()`], which
-/// marks all other methods as unimplemented.
+/// This trait is not sealed, but is likely to gain new requirements in what would otherwise not be
+/// a breaking update. For any set of traits imlemented, use the corresponding constructor
+/// function, eg. [`with_get_put_fetch()`], which marks all other methods as unimplemented.
 pub trait TypeRenderable:
     GetRenderable
     + PostRenderable
@@ -53,7 +53,6 @@ pub trait TypeRenderable:
     + DeleteRenderable
     + FetchRenderable
     + IPatchRenderable
-    + sealed::ExtensibleRenderable
 {
 }
 
@@ -122,8 +121,6 @@ pub trait IPatchRenderable {
 /// Keeping them hidden to stay flexible; they don't need to be named for their'e either default or
 /// their users have aliases.
 mod sealed {
-    pub trait ExtensibleRenderable {}
-
     pub trait TypeSerializer {
         const CF: Option<u16>;
     }
