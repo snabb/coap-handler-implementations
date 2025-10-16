@@ -1,3 +1,8 @@
+# Changes in 0.6.1
+
+* Add `.with_extra_record()` to builder to emit off-site links.
+* Add support for new coap-handler features from 0.2.1.
+
 # Changes in 0.6.0
 
 * TypeRenderable split into GetRenderable/PostRenderable etc., implementing more methods
