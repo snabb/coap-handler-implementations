@@ -18,7 +18,7 @@ workspace = true
 
 [dependencies]
 coap-message = "0.3.0-alpha.1"
-coap-handler = "0.2.0-alpha.1"
+coap-handler = "0.2.1"
 
 windowed-infinity = "0.2.0"
 tee-embedded-io = "0.1.0"
