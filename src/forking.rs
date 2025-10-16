@@ -318,6 +318,16 @@ where
                     .map(first as fn(_) -> _),
             )
     }
+
+    fn write_extra_link_format(
+        &self,
+        writer: &mut impl core::fmt::Write,
+        is_first: &mut bool,
+    ) -> core::fmt::Result {
+        self.h1.write_extra_link_format(writer, is_first)?;
+        self.h2.write_extra_link_format(writer, is_first)?;
+        Ok(())
+    }
 }
 
 // This is identical to the ForkingHandler in its structure -- just the matching behavior differs.
