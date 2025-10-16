@@ -228,17 +228,7 @@ pub fn write_link_format(
             write!(w, ";rel=\"{rel}\"")?;
         }
         for attr in record.attributes() {
-            match attr {
-                Attribute::Observable => write!(w, ";obs")?,
-                Attribute::ResourceType(s) => write!(w, ";rt=\"{s}\"")?,
-                Attribute::Interface(s) => write!(w, ";if=\"{s}\"")?,
-                Attribute::Title(s) => write!(w, ";title=\"{s}\"")?,
-                Attribute::Ct(s) => write!(w, ";ct={s}")?,
-                Attribute::Sz(s) => write!(w, ";sz={s}")?,
-                // New attributes are ignored -- as a matter of best practice, when a new attribute
-                // is added, it should be covered here.
-                _ => (),
-            }
+            attr.write_link_format(w)?;
         }
     }
     Ok(())
