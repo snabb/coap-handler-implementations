@@ -158,6 +158,14 @@ pub trait ReportingHandlerBuilder<'a, OldRD>: HandlerBuilder<'a, OldRD> + Report
     fn with_wkc(self) -> wkc_implementation::WellKnownCore<Self> {
         wkc_implementation::WellKnownCore::new(self)
     }
+
+    fn with_extra_record(
+        self,
+        target: &'a str,
+        attributes: &'a [Attribute],
+    ) -> WithExtraRecord<'a, Self> {
+        WithExtraRecord::new(self, target, attributes)
+    }
 }
 
 impl<OldRD, OldH> ReportingHandlerBuilder<'_, OldRD> for OldH
@@ -458,5 +466,83 @@ where
                     .zip(core::iter::repeat(self.h1_condition))
                     .map(first as fn(_) -> _),
             )
+    }
+}
+
+pub struct WithExtraRecord<'a, H> {
+    handler: H,
+    target: &'a str,
+    attributes: &'a [Attribute],
+}
+
+impl<'a, H> WithExtraRecord<'a, H> {
+    pub fn new(handler: H, target: &'a str, attributes: &'a [Attribute]) -> Self {
+        Self {
+            handler,
+            target,
+            attributes,
+        }
+    }
+}
+
+// Plain forwarding implementation
+impl<H: Handler> Handler for WithExtraRecord<'_, H> {
+    type RequestData = H::RequestData;
+    type ExtractRequestError = H::ExtractRequestError;
+    type BuildResponseError<M: MinimalWritableMessage> = H::BuildResponseError<M>;
+
+    fn extract_request_data<M: ReadableMessage>(
+        &mut self,
+        request: &M,
+    ) -> Result<Self::RequestData, Self::ExtractRequestError> {
+        self.handler.extract_request_data(request)
+    }
+
+    fn estimate_length(&mut self, request: &Self::RequestData) -> usize {
+        self.handler.estimate_length(request)
+    }
+
+    fn build_response<M: MutableWritableMessage>(
+        &mut self,
+        response: &mut M,
+        request: Self::RequestData,
+    ) -> Result<(), Self::BuildResponseError<M>> {
+        self.handler.build_response(response, request)
+    }
+}
+
+impl<'a, H: Reporting> Reporting for WithExtraRecord<'a, H> {
+    type Record<'b>
+        = H::Record<'b>
+    where
+        Self: 'b;
+
+    type Reporter<'b>
+        = H::Reporter<'b>
+    where
+        Self: 'b;
+    fn report(&self) -> Self::Reporter<'_> {
+        self.handler.report()
+    }
+
+    fn write_extra_link_format(
+        &self,
+        writer: &mut impl core::fmt::Write,
+        is_first: &mut bool,
+    ) -> core::fmt::Result {
+        self.handler.write_extra_link_format(writer, is_first)?;
+
+        if !*is_first {
+            write!(writer, ",")?;
+        } else {
+            *is_first = false;
+        }
+
+        write!(writer, "<{}>", self.target)?;
+        for a in self.attributes {
+            a.write_link_format(writer)?;
+        }
+
+        Ok(())
     }
 }
