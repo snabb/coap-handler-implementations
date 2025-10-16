@@ -143,9 +143,35 @@ impl<H: Handler> Handler for ConstantSingleRecordReport<'_, H> {
     }
 }
 
+/// A record that serves path and attributes from slices.
+///
+/// This is mostly used internally, but can be used through the public constructors in a
+/// [`Reporting::report()`] method.
+///
+/// This enables relatively simple creation of reports directly at the resource type level
+/// (although unfortunately, doing this is still way more verbose than adding a resource using
+/// [`.at_with_attributes()`][crate::HandlerBuilder::at_with_attributes]).
 pub struct ConstantSliceRecord<'a> {
     path: &'a [&'a str],
     attributes: &'a [Attribute],
+}
+
+impl<'a> ConstantSliceRecord<'a> {
+    /// Constructs a record from attributes.
+    ///
+    /// The path is empty, as is suitable for the large class of handlers that do not process any
+    /// Uri-Path options on their own.
+    pub fn new(attributes: &'a [Attribute]) -> Self {
+        Self {
+            path: &[],
+            attributes,
+        }
+    }
+
+    /// Constructs a record from path segments and attributes.
+    pub fn new_with_path(path: &'a [&'a str], attributes: &'a [Attribute]) -> Self {
+        Self { path, attributes }
+    }
 }
 
 impl<'a> Record for ConstantSliceRecord<'a> {
