@@ -231,5 +231,6 @@ pub fn write_link_format(
             attr.write_link_format(w)?;
         }
     }
+    report.write_extra_link_format(w, &mut first)?;
     Ok(())
 }
