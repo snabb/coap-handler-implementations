@@ -243,6 +243,12 @@ impl<C> minicbor_2::encode::Encode<C> for Empty {
     }
 }
 
+impl<C> minicbor_2::encode::CborLen<C> for Empty {
+    fn cbor_len(&self, _ctx: &mut C) -> usize {
+        0
+    }
+}
+
 impl<H> Handler for TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
