@@ -233,6 +233,16 @@ impl<'b, C> minicbor_2::decode::Decode<'b, C> for Empty {
     }
 }
 
+impl<C> minicbor_2::encode::Encode<C> for Empty {
+    fn encode<W: minicbor_2::encode::Write>(
+        &self,
+        _e: &mut minicbor_2::Encoder<W>,
+        _ctx: &mut C,
+    ) -> Result<(), minicbor_2::encode::Error<W::Error>> {
+        Ok(())
+    }
+}
+
 impl<H> Handler for TypeHandler<H, MiniCBORSerialization2>
 where
     H: TypeRenderable,
