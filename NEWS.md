@@ -1,3 +1,7 @@
+# Changes in 0.6.2
+
+* Implemented missing CBOR encoding to `Empty` type to allow returning that on POSTs.
+
 # Changes in 0.6.1
 
 * Add `.with_extra_record()` to builder to emit off-site links.
