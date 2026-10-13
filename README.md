@@ -1,3 +1,21 @@
+> [!IMPORTANT]
+> **This is a fork** of `coap-handler-implementations` 0.6.2 from
+> [chrysn/coap-tools](https://codeberg.org/chrysn/coap-tools), split out of that workspace
+> with its history, with these bugs fixed on `master`:
+>
+> * **Block 0 at the smallest size panics.** With block number 0 and SZX 0 the Block2 value
+>   is the empty uint, and setting the "more" flag indexed its last byte. A single GET with
+>   that (valid) option stopped the server. The option is now written with the flag set and
+>   cleared when there is no more, so it is never empty.
+> * **A block past the end panics.** A Block2 request starting beyond the representation
+>   reached `unimplemented!("Report out-of-band seek")`. It is now answered 4.02 Bad Option
+>   with no payload.
+>
+> The fixes are not submitted upstream: they were written with AI assistance, and Codeberg
+> does not accept AI-generated code. The version number is unchanged, so the fork can be
+> used through `[patch.crates-io]` with a git `rev`. The manifest takes `coap-message-utils`
+> from crates.io instead of its sibling path, as the published crate does.
+
 # coap-handler-implementations ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue) [![coap-handler-implementations on crates.io](https://img.shields.io/crates/v/coap-handler-implementations)](https://crates.io/crates/coap-handler-implementations) [![coap-handler-implementations on docs.rs](https://docs.rs/coap-handler-implementations/badge.svg)](https://docs.rs/coap-handler-implementations) [![Source Code Repository](https://img.shields.io/badge/Code-On%20Codeberg-blue?logo=Codeberg)](https://codeberg.org/chrysn/coap-tools) ![Rust Version: 1.88.0](https://img.shields.io/badge/rustc-1.88.0-orange.svg)
 
 The `coap-handler-implementations` crate provides a few convenience, example or
