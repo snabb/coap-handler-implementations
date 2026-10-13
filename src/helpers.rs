@@ -84,8 +84,11 @@ where
     {
         response.add_option_uint(cfopt, cf).unwrap();
     }
+    // Added with the "more" flag set and cleared below if there is no more: a
+    // value without it can be the empty uint (block 0, SZX 0), which has no
+    // byte to set the flag in.
     response
-        .add_option_uint(optconvert(option::BLOCK2), block2.to_option_value(false))
+        .add_option_uint(optconvert(option::BLOCK2), block2.to_option_value(true))
         .unwrap();
 
     let (characterization, written, etag, ret) = {
@@ -116,7 +119,12 @@ where
 
     response.truncate(written).unwrap();
     if characterization == Underflow {
-        unimplemented!("Report out-of-band seek");
+        // The requested block starts past the end of the representation.
+        response.set_code(
+            coap_message::Code::new(coap_numbers::code::BAD_OPTION)
+                .map_err(|_| "Response type can't express 4.02 Bad Option")
+                .unwrap(),
+        );
     }
 
     response.mutate_options(|optnum, value| {
@@ -124,9 +132,9 @@ where
             option::ETAG => {
                 value.copy_from_slice(&etag);
             }
-            option::BLOCK2 if characterization == Overflow => {
-                // set "more" flag
-                value[value.len() - 1] |= 0x08;
+            option::BLOCK2 if characterization != Overflow => {
+                // clear "more" flag
+                value[value.len() - 1] &= !0x08;
             }
             _ => (),
         };
